@@ -13,8 +13,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        # self.showFullScreen()
+        #self.showFullScreen()
         self.setWindowTitle("AIVlog")
+        #self.setStyleSheet("background-color: #eeeeee; color: black; ")
 
         self.quitAction = QtWidgets.QAction("&Exit", self)
         self.quitAction.setShortcut("Ctrl+Q")
@@ -42,3 +43,5 @@ class MainWindow(QtWidgets.QMainWindow):
             sys.exit()
         else:
             pass
+
+
