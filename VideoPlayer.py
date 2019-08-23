@@ -34,6 +34,16 @@ class VideoPlayer(QtWidgets.QWidget):
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.play_button.clicked.connect(self.switch_playing)
 
+        self.backward_button = QPushButton()
+        self.backward_button.setEnabled(False)
+        self.backward_button.setIcon(self.style().standardIcon(QStyle.SP_MediaSeekBackward))
+        self.backward_button.clicked.connect(self.seek_backward)
+
+        self.forward_button = QPushButton()
+        self.forward_button.setEnabled(False)
+        self.forward_button.setIcon(self.style().standardIcon(QStyle.SP_MediaSeekForward))
+        self.forward_button.clicked.connect(self.seek_forward)
+
         self.position_slider = QSlider(Qt.Horizontal)
         self.position_slider.setRange(0, 0)
 
@@ -41,7 +51,9 @@ class VideoPlayer(QtWidgets.QWidget):
         self.vbox.addWidget(self.video_frame)
 
         self.hbox = QHBoxLayout()
+        self.hbox.addWidget(self.backward_button)
         self.hbox.addWidget(self.play_button)
+        self.hbox.addWidget(self.forward_button)
         self.hbox.addWidget(self.position_slider)
         self.vbox.addLayout(self.hbox)
         self.setLayout(QVBoxLayout())
@@ -53,6 +65,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.video_stream = video_stream
         self.video_stream.pix_signal.connect(self.np_arr_slot)
         self.play_button.setEnabled(True)
+        self.set_enabled_seek_buttons(True)
         self.position_slider.setRange(1, self.video_stream.frame_count)
         #self.position_slider.valueChanged.connect(self.change_slider_value)
         self.position_slider.sliderPressed.connect(self.press_slider)
@@ -102,10 +115,10 @@ class VideoPlayer(QtWidgets.QWidget):
             self.video_stream.pause()
             self.playing_before_rewind = True
 
-    def change_slider_value(self):
-        if self.slider_pressed:
-            self.video_stream.set_position(self.position_slider.value())
-            self.update_frame()
+    # def change_slider_value(self):
+    #     if self.slider_pressed:
+    #         self.video_stream.set_position(self.position_slider.value())
+    #         self.update_frame()
 
     def set_pix(self, pix):
         self.video_frame.setPixmap(pix)
@@ -115,9 +128,23 @@ class VideoPlayer(QtWidgets.QWidget):
         if self.video_stream.playing:
             self.video_stream.pause()
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+            self.set_enabled_seek_buttons(True)
         else:
             self.video_stream.start()
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+            self.set_enabled_seek_buttons(False)
+
+    def set_enabled_seek_buttons(self, state: bool):
+        self.backward_button.setEnabled(state)
+        self.forward_button.setEnabled(state)
+
+    def seek_forward(self):
+        self.video_stream.seek_forward()
+        self.update_frame()
+
+    def seek_backward(self):
+        self.video_stream.seek_back()
+        self.update_frame()
 
     def reset_video_stream(self):
         if self.video_stream:

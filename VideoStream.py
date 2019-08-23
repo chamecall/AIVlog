@@ -31,7 +31,13 @@ class VideoStream(QtWidgets.QWidget):
             self.cur_frame_num = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
             self.pix_signal.emit(frame)
 
+    def seek_back(self):
+        if not self.cur_frame_num == 1:
+            self.set_position(self.cur_frame_num - 1)
 
+    def seek_forward(self):
+        if not self.cur_frame_num == self.frame_count:
+            self.set_position(self.cur_frame_num + 1)
 
     def set_position(self, position):
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, position)
