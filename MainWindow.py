@@ -10,7 +10,7 @@ from MainWidget import MainWidget
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, screen_size: tuple):
         super(MainWindow, self).__init__()
 
         #self.showFullScreen()
@@ -26,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openVideoFile = QtWidgets.QAction("&Open Video File", self)
         self.openVideoFile.setShortcut("Ctrl+Shift+V")
         self.openVideoFile.setStatusTip('Open .h264 File')
-        self.main_widget = MainWidget(self)
+        self.main_widget = MainWidget(self, screen_size)
         self.openVideoFile.triggered.connect(self.main_widget.load_video_file)
         self.mainMenu = self.menuBar()
         self.fileMenu = self.mainMenu.addMenu('&File')

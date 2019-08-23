@@ -10,15 +10,14 @@ import numpy as np
 from Detector import Detector
 
 class VideoPlayer(QtWidgets.QWidget):
-    frame_size = (600, 400)
     detection_signal = QtCore.pyqtSignal(list)
 
-
-    def __init__(self, parent=None):
+    def __init__(self, screen_size: tuple, parent=None):
         super(VideoPlayer, self).__init__(parent)
         # cache - {frame_num: detections}
         #self.recognizer = None
         self.cache = {}
+        self.frame_size = self.define_frame_size(screen_size)
         self.detector = Detector('detections.json')
         self.exitFrame = QtWidgets.QFrame()
         self.exitFrame.setStyleSheet("background-color: #888899;")
@@ -59,17 +58,22 @@ class VideoPlayer(QtWidgets.QWidget):
         self.position_slider.sliderPressed.connect(self.press_slider)
         self.position_slider.sliderReleased.connect(self.release_slider)
         #print(self.video_stream.width, self.video_stream.height)
+
         #self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
         self.update_frame()
 
     def update_frame(self):
         self.np_arr_slot(self.video_stream.get_current_frame())
 
-
     @staticmethod
-    def image_from_np_to_pix(frame: np.ndarray):
+    def define_frame_size(screen_size: tuple):
+        # ratio between videoplayer and another items in height
+        ratio = 2 / 3
+        return tuple(int(aspect * ratio) for aspect in screen_size)
+
+    def image_from_np_to_pix(self, frame: np.ndarray):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.resize(frame, VideoPlayer.frame_size, interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, self.frame_size, interpolation=cv2.INTER_AREA)
         img = QtGui.QImage(frame, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
         pix = QtGui.QPixmap.fromImage(img)
         return pix

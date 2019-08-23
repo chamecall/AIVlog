@@ -9,14 +9,14 @@ from VideoPlayer import VideoPlayer
 
 
 class MainWidget(QtWidgets.QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, screen_size: tuple):
         super(MainWidget, self).__init__(parent)
         self.video_vbox = QVBoxLayout()
         self.list_hbox = QHBoxLayout()
         self.object_list_box = ObjectListBox(self)
         self.list_hbox.addWidget(self.object_list_box)
         self.main_vbox = QVBoxLayout(self)
-        self.video_player = VideoPlayer()
+        self.video_player = VideoPlayer(screen_size)
         self.video_player.detection_signal.connect(self.object_list_box.set_detections)
         self.video_vbox.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.video_vbox.addWidget(self.video_player)

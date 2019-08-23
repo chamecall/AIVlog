@@ -5,6 +5,7 @@ if __name__ == '__main__':
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
+    screen_size = app.primaryScreen().size()
+    window = MainWindow((screen_size.width(), screen_size.height()))
     window.show()
     sys.exit(app.exec_())
