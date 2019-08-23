@@ -17,6 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("AIVlog")
         #self.setStyleSheet("background-color: #eeeeee; color: black; ")
 
+
         self.quitAction = QtWidgets.QAction("&Exit", self)
         self.quitAction.setShortcut("Ctrl+Q")
         self.quitAction.setStatusTip('Close The App')

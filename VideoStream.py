@@ -34,7 +34,6 @@ class VideoStream(QtWidgets.QWidget):
 
 
     def set_position(self, position):
-        #print(position)
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, position)
         self.cur_frame_num = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
 

@@ -5,27 +5,28 @@ from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
 from PyQt5 import QtGui
-from Recognizer import Recognizer
+import Recognizer
 import numpy as np
+from Detector import Detector
 
 class VideoPlayer(QtWidgets.QWidget):
     frame_size = (600, 400)
+    detection_signal = QtCore.pyqtSignal(list)
 
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(VideoPlayer, self).__init__(parent)
         # cache - {frame_num: detections}
-        self.recognizer = None
+        #self.recognizer = None
         self.cache = {}
-
-        self.exitFrame = QtWidgets.QFrame(self)
+        self.detector = Detector('detections.json')
+        self.exitFrame = QtWidgets.QFrame()
         self.exitFrame.setStyleSheet("background-color: #888899;")
         self.exitFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.exitFrame.setFrameShadow(QtWidgets.QFrame.Raised)
 
         self.vbox = QtWidgets.QVBoxLayout(self.exitFrame)
         self.video_frame = QtWidgets.QLabel()
-        self.video_frame.setAlignment(Qt.AlignHCenter)
 
         self.video_stream = None
 
@@ -44,7 +45,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.hbox.addWidget(self.play_button)
         self.hbox.addWidget(self.position_slider)
         self.vbox.addLayout(self.hbox)
-        self.setLayout(QVBoxLayout(self))
+        self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.exitFrame)
         self.playing_before_rewind = False
         self.setFixedSize(self.frame_size[0], self.frame_size[1] + 20)
@@ -58,7 +59,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.position_slider.sliderPressed.connect(self.press_slider)
         self.position_slider.sliderReleased.connect(self.release_slider)
         #print(self.video_stream.width, self.video_stream.height)
-        self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
+        #self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
         self.update_frame()
 
     def update_frame(self):
@@ -76,9 +77,11 @@ class VideoPlayer(QtWidgets.QWidget):
     def np_arr_slot(self, np_arr_frame):
         if np_arr_frame is None:
             return
-
-        proccessed_frame = self.recognizer.forward(np_arr_frame)
-        pix = self.image_from_np_to_pix(proccessed_frame)
+        detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
+        boxed_frame = Recognizer.cvDrawBoxes(detections, np_arr_frame)
+        #proccessed_frame = self.recognizer.forward(np_arr_frame)
+        pix = self.image_from_np_to_pix(boxed_frame)
+        self.detection_signal.emit(detections)
         self.set_pix(pix)
 
     def release_slider(self):
