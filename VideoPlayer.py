@@ -146,7 +146,9 @@ class VideoPlayer(QtWidgets.QWidget):
         self.video_stream.seek_back()
         self.update_frame()
 
-    def reset_video_stream(self):
+    def close(self):
         if self.video_stream:
             self.video_stream.stop()
             self.video_stream = None
+        if self.detector:
+            self.detector.close()

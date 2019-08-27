@@ -3,21 +3,28 @@ import cv2
 from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
-from ObjectListBox import ObjectListBox
+from DetectionList import DetectionList
 from VideoStream import VideoStream
 from VideoPlayer import VideoPlayer
-
+from LabelSection import LabelSection
+from AssigningList import AssigningList
 
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, parent, screen_size: tuple):
         super(MainWidget, self).__init__(parent)
         self.video_vbox = QVBoxLayout()
+        self.detection_list = DetectionList(self)
+        self.assigning_list = AssigningList()
+        self.label_section = LabelSection()
+        self.label_section.dropped_list_box.assigning.connect(self.assigning_list.add_assigning)
         self.list_hbox = QHBoxLayout()
-        self.object_list_box = ObjectListBox(self)
-        self.list_hbox.addWidget(self.object_list_box)
+        self.list_hbox.addWidget(self.detection_list)
+        self.list_hbox.addWidget(self.label_section)
+        self.list_hbox.addWidget(self.assigning_list)
+
         self.main_vbox = QVBoxLayout(self)
         self.video_player = VideoPlayer(screen_size)
-        self.video_player.detection_signal.connect(self.object_list_box.set_detections)
+        self.video_player.detection_signal.connect(self.detection_list.set_detections)
         self.video_vbox.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.video_vbox.addWidget(self.video_player)
         self.main_vbox.addLayout(self.video_vbox)
@@ -34,4 +41,4 @@ class MainWidget(QtWidgets.QWidget):
             self.video_player.set_video_stream(VideoStream(self.video_file_name))
 
     def close(self):
-        self.video_player.reset_video_stream()
+        self.video_player.close()
