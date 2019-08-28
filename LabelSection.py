@@ -4,6 +4,9 @@ from CustomWidget import CustomWidget
 from Utils import remove_item_from_list
 
 class LabelSection(QtWidgets.QWidget):
+    label_creating = QtCore.pyqtSignal(str)
+    label_removing = QtCore.pyqtSignal(str)
+
     def __init__(self, parent=None):
         super(LabelSection, self).__init__(parent)
 
@@ -26,6 +29,12 @@ class LabelSection(QtWidgets.QWidget):
         item_widget = CustomWidget(label, 'Delete the label')
         item.setSizeHint(item_widget.sizeHint())
         item_widget.button.clicked.connect(
-            lambda checked, l=self.dropped_list_box, it=item: remove_item_from_list(l, it))
+            lambda checked, l=self.dropped_list_box, it=item: self.remove_item(l, it))
         self.dropped_list_box.setItemWidget(item, item_widget)
         self.text_box.clear()
+
+        self.label_creating.emit(label)
+
+    def remove_item(self, list_widget, item):
+        self.label_removing.emit(list_widget.itemWidget(item).label.text())
+        remove_item_from_list(list_widget, item)

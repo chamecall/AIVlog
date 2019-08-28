@@ -6,7 +6,7 @@ from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
 from PyQt5 import QtGui
-from MainWidget import MainWidget
+from AIVlog import AIVlog
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -26,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openVideoFile = QtWidgets.QAction("&Open Video File", self)
         self.openVideoFile.setShortcut("Ctrl+Shift+V")
         self.openVideoFile.setStatusTip('Open .h264 File')
-        self.main_widget = MainWidget(self, screen_size)
+        self.main_widget = AIVlog(self, screen_size)
         self.openVideoFile.triggered.connect(self.main_widget.load_video_file)
         self.mainMenu = self.menuBar()
         self.fileMenu = self.mainMenu.addMenu('&File')

@@ -10,7 +10,7 @@ import numpy as np
 from Detector import Detector
 
 class VideoPlayer(QtWidgets.QWidget):
-    detection_signal = QtCore.pyqtSignal(list)
+    detection_signal = QtCore.pyqtSignal(int, list)
 
     def __init__(self, screen_size: tuple, parent=None):
         super(VideoPlayer, self).__init__(parent)
@@ -98,7 +98,7 @@ class VideoPlayer(QtWidgets.QWidget):
         boxed_frame = Recognizer.cvDrawBoxes(detections, np_arr_frame)
         #proccessed_frame = self.recognizer.forward(np_arr_frame)
         pix = self.image_from_np_to_pix(boxed_frame)
-        self.detection_signal.emit(detections)
+        self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
         self.set_pix(pix)
 
     def release_slider(self):

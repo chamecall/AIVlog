@@ -1,10 +1,9 @@
 from PyQt5 import QtWidgets, QtCore
-
+from Utils import format_detections_to_print_out
 
 class DetectionList(QtWidgets.QListWidget):
     def __init__(self, parent):
         super(DetectionList, self).__init__(parent)
-        self.dragged_value = None
         self.dragged_item = None
         self.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
         self.currentItemChanged.connect(self.item_clicked)
@@ -22,10 +21,10 @@ class DetectionList(QtWidgets.QListWidget):
         row_num = self.row(self.dragged_item)
         self.takeItem(row_num)
 
-    def set_detections(self, detections_list):
+    def set_detections(self, detection_list):
         self.clear()
-        for i, detection in enumerate(detections_list, 1):
-            self.add_item(str(i))
+        labels = format_detections_to_print_out(detection_list)
+        self.addItems(labels)
 
     def add_item(self, item_value):
         item = QtWidgets.QListWidgetItem(item_value)

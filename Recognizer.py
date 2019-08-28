@@ -27,7 +27,7 @@ def cvDrawBoxes(detections, img):
         pt1 = (xmin, ymin)
         pt2 = (xmax, ymax)
         cv2.rectangle(img, pt1, pt2, (0, 0, 255), 2)
-        cv2.putText(img, f'{i} - {detection[0]} ({round(detection[1] * 100, 2)}%)',
+        cv2.putText(img, f'#{i} - {detection[0]} ({round(detection[1] * 100, 2)}%)',
                     (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                     [0, 255, 0], 2)
     return img
