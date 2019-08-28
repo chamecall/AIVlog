@@ -17,6 +17,8 @@ class MainWidget(QtWidgets.QWidget):
         self.assigning_list = AssigningList()
         self.label_section = LabelSection()
         self.label_section.dropped_list_box.assigning.connect(self.assigning_list.add_assigning)
+        self.label_section.dropped_list_box.assigning.connect(self.detection_list.del_dragged_item)
+        self.assigning_list.item_return.connect(self.detection_list.add_item)
         self.list_hbox = QHBoxLayout()
         self.list_hbox.addWidget(self.detection_list)
         self.list_hbox.addWidget(self.label_section)

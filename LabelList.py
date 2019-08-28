@@ -15,10 +15,9 @@ class LabelList(QtWidgets.QListWidget):
         position = QPointF(event.pos()).toPoint()
         selected_item = self.itemAt(position)
         if selected_item:
-            parent_list = selected_item.listWidget()
             detection_num = event.mimeData().text()
-            label = parent_list.itemWidget(selected_item).label.text()
-            self.assigning.emit([label, detection_num])
+            label = self.itemWidget(selected_item).label.text()
             event.setDropAction(QtCore.Qt.MoveAction)
+            self.assigning.emit([detection_num, label])
 
 

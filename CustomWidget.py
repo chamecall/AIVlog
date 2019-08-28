@@ -7,7 +7,7 @@ class CustomWidget(QtWidgets.QWidget):
         self.label = QtWidgets.QLabel(label_text)
 
         self.button = QtWidgets.QPushButton(button_text)
-        self.button.setStyleSheet("* {background-color: red; padding: 10px;}")
+        self.button.setStyleSheet("* {background-color: red;}")
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.button)
