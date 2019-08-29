@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import time
 import darknet
-
+from Utils import format_detection_to_print_out
 
 def convertBack(x, y, w, h):
     xmin = int(round(x - (w / 2)))
@@ -17,6 +17,7 @@ def convertBack(x, y, w, h):
 
 
 def cvDrawBoxes(detections, img):
+
     for i, detection in enumerate(detections, 1):
         x, y, w, h = detection[2][0], \
                      detection[2][1], \
@@ -27,7 +28,7 @@ def cvDrawBoxes(detections, img):
         pt1 = (xmin, ymin)
         pt2 = (xmax, ymax)
         cv2.rectangle(img, pt1, pt2, (0, 0, 255), 2)
-        cv2.putText(img, f'#{i} - {detection[0]} ({round(detection[1] * 100, 2)}%)',
+        cv2.putText(img, format_detection_to_print_out(detection),
                     (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                     [0, 255, 0], 2)
     return img

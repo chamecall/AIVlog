@@ -1,5 +1,8 @@
 from PyQt5 import QtWidgets, QtCore
-from Utils import format_detections_to_print_out
+from PyQt5.QtCore import QUrl
+from Utils import format_detection_to_print_out
+from DetectionLinkedQListWidgetItem import DetectionLinkedQListWidgetItem
+
 
 class DetectionList(QtWidgets.QListWidget):
     def __init__(self, parent):
@@ -15,7 +18,7 @@ class DetectionList(QtWidgets.QListWidget):
         self.dragged_item = item
 
     def dragEnterEvent(self, event):
-        event.mimeData().setText(self.dragged_item.text())
+        event.mimeData().setText(self.dragged_item.detection_num)
 
     def del_dragged_item(self):
         row_num = self.row(self.dragged_item)
@@ -23,11 +26,12 @@ class DetectionList(QtWidgets.QListWidget):
 
     def set_detections(self, detection_list):
         self.clear()
-        labels = format_detections_to_print_out(detection_list)
-        self.addItems(labels)
+        for i, detection in enumerate(detection_list):
+            detection_str = format_detection_to_print_out(detection)
+            self.add_item(i, detection_str)
 
-    def add_item(self, item_value):
-        item = QtWidgets.QListWidgetItem(item_value)
+    def add_item(self, detection_num, item_value):
+        item = DetectionLinkedQListWidgetItem(detection_num, item_value)
         self.addItem(item)
-        self.sortItems()
+        #self.sortItems()
 

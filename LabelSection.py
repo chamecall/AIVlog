@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 from LabelList import LabelList
-from CustomWidget import CustomWidget
+from SelfRemovingWidget import SelfRemovingWidget
 from Utils import remove_item_from_list
 
 class LabelSection(QtWidgets.QWidget):
@@ -26,7 +26,7 @@ class LabelSection(QtWidgets.QWidget):
     def add_label(self):
         label = self.text_box.text()
         item = QtWidgets.QListWidgetItem(self.dropped_list_box)
-        item_widget = CustomWidget(label, 'Delete the label')
+        item_widget = SelfRemovingWidget(label, 'Delete the label')
         item.setSizeHint(item_widget.sizeHint())
         item_widget.button.clicked.connect(
             lambda checked, l=self.dropped_list_box, it=item: self.remove_item(l, it))

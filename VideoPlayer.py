@@ -8,15 +8,17 @@ from PyQt5 import QtGui
 import Recognizer
 import numpy as np
 from Detector import Detector
+import Cache
 
 class VideoPlayer(QtWidgets.QWidget):
     detection_signal = QtCore.pyqtSignal(int, list)
+    cache_signal = QtCore.pyqtSignal()
 
-    def __init__(self, screen_size: tuple, parent=None):
+    def __init__(self, cache: Cache, screen_size: tuple, parent=None):
         super(VideoPlayer, self).__init__(parent)
         # cache - {frame_num: detections}
         #self.recognizer = None
-        self.cache = {}
+        self.cache = cache
         self.frame_size = self.define_frame_size(screen_size)
         self.detector = Detector('detections.json')
         self.exitFrame = QtWidgets.QFrame()
@@ -44,6 +46,11 @@ class VideoPlayer(QtWidgets.QWidget):
         self.forward_button.setIcon(self.style().standardIcon(QStyle.SP_MediaSeekForward))
         self.forward_button.clicked.connect(self.seek_forward)
 
+        self.cur_frame_num_label = QLabel('0')
+        self.separator_label = QLabel('/')
+        self.frames_count_label = QLabel('0')
+
+
         self.position_slider = QSlider(Qt.Horizontal)
         self.position_slider.setRange(0, 0)
 
@@ -54,6 +61,9 @@ class VideoPlayer(QtWidgets.QWidget):
         self.hbox.addWidget(self.backward_button)
         self.hbox.addWidget(self.play_button)
         self.hbox.addWidget(self.forward_button)
+        self.hbox.addWidget(self.cur_frame_num_label)
+        self.hbox.addWidget(self.separator_label)
+        self.hbox.addWidget(self.frames_count_label)
         self.hbox.addWidget(self.position_slider)
         self.vbox.addLayout(self.hbox)
         self.setLayout(QVBoxLayout())
@@ -71,7 +81,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.position_slider.sliderPressed.connect(self.press_slider)
         self.position_slider.sliderReleased.connect(self.release_slider)
         #print(self.video_stream.width, self.video_stream.height)
-
+        self.frames_count_label.setText(str(self.video_stream.frame_count))
         #self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
         self.update_frame()
 
@@ -94,11 +104,17 @@ class VideoPlayer(QtWidgets.QWidget):
     def np_arr_slot(self, np_arr_frame):
         if np_arr_frame is None:
             return
-        detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
+        cur_frame_num = self.video_stream.cur_frame_num
+        self.cur_frame_num_label.setText(str(cur_frame_num))
+        if not self.cache.all_detections.get(cur_frame_num, None):
+            detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
+            self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
+        else:
+            detections = self.cache.all_detections[cur_frame_num]
+            self.cache_signal.emit()
         boxed_frame = Recognizer.cvDrawBoxes(detections, np_arr_frame)
         #proccessed_frame = self.recognizer.forward(np_arr_frame)
         pix = self.image_from_np_to_pix(boxed_frame)
-        self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
         self.set_pix(pix)
 
     def release_slider(self):
