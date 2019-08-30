@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import QPointF
 
 class LabelList(QtWidgets.QListWidget):
-    assigning = QtCore.pyqtSignal(str, int)
+    assigning = QtCore.pyqtSignal(int, int)
 
     def __init__(self, type, parent=None):
         super(LabelList, self).__init__(parent)
@@ -16,7 +16,7 @@ class LabelList(QtWidgets.QListWidget):
         selected_item = self.itemAt(position)
         if selected_item:
             detection_num = event.mimeData().text()
-            label = self.itemWidget(selected_item).label.text()
+            label = self.itemWidget(selected_item).value
             event.setDropAction(QtCore.Qt.MoveAction)
             self.assigning.emit(label, int(detection_num))
 

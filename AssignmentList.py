@@ -20,6 +20,6 @@ class AssignmentList(QtWidgets.QListWidget):
         self.setItemWidget(item, item_widget)
 
     def remove_item(self, list_widget, item):
-        detection_num = self.itemWidget(item).detection_num
+        detection_num = self.itemWidget(item).value
         remove_item_from_list(list_widget, item)
         self.item_removing.emit(detection_num)

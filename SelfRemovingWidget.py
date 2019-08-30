@@ -1,11 +1,11 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class SelfRemovingWidget(QtWidgets.QWidget):
-    def __init__(self, label_text, button_text, detection_num=None, parent=None):
+    def __init__(self, label_text, button_text, value=None, parent=None):
         super(SelfRemovingWidget, self).__init__(parent)
 
         self.label = QtWidgets.QLabel(label_text)
-        self.detection_num = detection_num
+        self.value = value
         self.button = QtWidgets.QPushButton(button_text)
         self.button.setStyleSheet("* {background-color: red;}")
         layout = QtWidgets.QHBoxLayout()
