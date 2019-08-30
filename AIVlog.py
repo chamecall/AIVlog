@@ -106,7 +106,7 @@ class AIVlog(QtWidgets.QWidget):
 
     def load_video_file(self):
         #self.video_file_name, _ = QFileDialog.getOpenFileName(self, "Open Movie", QDir.homePath())
-        self.video_file_name = '/home/algernon/sample.mkv'
+        self.video_file_name = 'sample.mkv'
         if not self.video_file_name == '':
             self.isVideoFileLoaded = True
             self.video_player.set_video_stream(VideoStream(self.video_file_name))
