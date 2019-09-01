@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from CategoryList import CategoryList
 
 class CategorySection(QtWidgets.QWidget):
-    category_changing = QtCore.pyqtSignal(int)
+    category_changing = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(CategorySection, self).__init__(parent)
@@ -18,22 +18,20 @@ class CategorySection(QtWidgets.QWidget):
         self.vbox.addWidget(self.category_list)
         self.combo_box.currentIndexChanged.connect(self.current_index_changed)
 
-    def add_label(self, label: str, label_index: int):
-        self.combo_box.addItem(label, label_index)
+    def add_label(self, label: str):
+        self.combo_box.addItem(label)
 
     def current_index_changed(self, index):
-        user_label_index = self.get_user_data_by_index(index)
-        self.category_changing.emit(user_label_index)
+        print('current text is', str(self.combo_box.currentText()))
+        self.category_changing.emit(str(self.combo_box.currentText()))
 
-    def get_user_data_by_index(self, index):
-        model_index = self.combo_box.model().index(index, 0)
-        user_label_index = self.combo_box.model().data(model_index, QtCore.Qt.UserRole)
-        return user_label_index
+    def check_cur_item_by_label(self, user_label):
+        return str(self.combo_box.currentText()) == user_label
 
     def get_current_index(self):
-        return self.currentIndex()
+        return str(self.combo_box.currentIndex())
 
     def del_item_by_text(self, text):
-        index = self.category_section.combo_box.findText(text)
-        self.category_section.combo_box.removeItem(index)
+        index = self.combo_box.findText(text)
+        self.combo_box.removeItem(index)
 

@@ -16,6 +16,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.showFullScreen()
         self.setWindowTitle("AIVlog")
         #self.setStyleSheet("background-color: #eeeeee; color: black; ")
+        self.main_widget = AIVlog(self, screen_size)
 
 
         self.quitAction = QtWidgets.QAction("&Exit", self)
@@ -26,11 +27,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openVideoFile = QtWidgets.QAction("&Open Video File", self)
         self.openVideoFile.setShortcut("Ctrl+Shift+V")
         self.openVideoFile.setStatusTip('Open .h264 File')
-        self.main_widget = AIVlog(self, screen_size)
         self.openVideoFile.triggered.connect(self.main_widget.load_video_file)
+
+
+        self.save_project = QtWidgets.QAction('&Save project', self)
+        self.save_project.setShortcut('Ctrl+S')
+        self.save_project.triggered.connect(self.main_widget.save_project)
+
+        self.open_project = QtWidgets.QAction('&Open project', self)
+        self.open_project.setShortcut('Ctrl+O')
+        self.open_project.triggered.connect(self.main_widget.open_project)
+
         self.mainMenu = self.menuBar()
         self.fileMenu = self.mainMenu.addMenu('&File')
         self.fileMenu.addAction(self.openVideoFile)
+        self.fileMenu.addAction(self.save_project)
+        self.fileMenu.addAction(self.open_project)
         self.fileMenu.addAction(self.quitAction)
 
         self.setCentralWidget(self.main_widget)

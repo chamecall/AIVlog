@@ -15,26 +15,29 @@ class LabelSection(QtWidgets.QWidget):
         self.text_box = QtWidgets.QLineEdit(self)
         add_button = QtWidgets.QPushButton('Add label')
         add_button.setStyleSheet("* {background-color: green;}")
-        add_button.clicked.connect(self.add_label)
+        add_button.clicked.connect(self.add_entered_label)
         hbox.addWidget(self.text_box, 2)
         hbox.addWidget(add_button, 1)
         vbox.addLayout(hbox)
-        self.dropped_list_box = LabelList(self)
-        vbox.addWidget(self.dropped_list_box)
+        self.label_list = LabelList(self)
+        vbox.addWidget(self.label_list)
 
-    def add_label(self):
+    def add_entered_label(self):
         label = self.text_box.text()
         if label == '':
             return
         index = self.parent.add_label(label)
         if index >= 0:
-            item = QtWidgets.QListWidgetItem(self.dropped_list_box)
-            item_widget = SelfRemovingWidget(label, 'Delete the label', index)
-            item.setSizeHint(item_widget.sizeHint())
-            item_widget.button.clicked.connect(
-                lambda checked, l=self.dropped_list_box, it=item: self.remove_item(l, it))
-            self.dropped_list_box.setItemWidget(item, item_widget)
-            self.text_box.clear()
+            self.add_item(label, index)
+
+    def add_item(self, label, index):
+        self.text_box.clear()
+        item = QtWidgets.QListWidgetItem(self.label_list)
+        item_widget = SelfRemovingWidget(label, 'Delete the label', index)
+        item.setSizeHint(item_widget.sizeHint())
+        item_widget.button.clicked.connect(
+            lambda checked, l=self.label_list, it=item: self.remove_item(l, it))
+        self.label_list.setItemWidget(item, item_widget)
 
     def remove_item(self, list_widget, item):
         item_widget = list_widget.itemWidget(item)
