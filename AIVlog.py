@@ -10,8 +10,9 @@ from LabelSection import LabelSection
 from AssignmentList import AssignmentList
 from Cache import Cache
 from CategorySection import CategorySection
-from Utils import format_detection_to_print_out, extract_detection_data
+from Utils import format_detection_to_print_out, extract_detection_data, format_bounding_box_tuple_to_str
 import pickle
+from DB import DB
 
 class AIVlog(QtWidgets.QWidget):
     def __init__(self, parent, screen_size: tuple):
@@ -29,7 +30,8 @@ class AIVlog(QtWidgets.QWidget):
         self.list_hbox.addWidget(self.detection_list)
         self.list_hbox.addWidget(self.label_section)
         self.list_hbox.addWidget(self.assignment_list)
-
+        self.db_name = 'vlog_db'
+        self.data_base = DB('localhost', 'root', 'root', self.db_name)
         self.cache = Cache()
         self.main_vbox = QVBoxLayout(self)
         self.video_player = VideoPlayer(self.cache, screen_size)
@@ -49,8 +51,6 @@ class AIVlog(QtWidgets.QWidget):
         self.isVideoFileLoaded = False
 
     def change_category(self, user_label):
-        print('category is', user_label)
-        print(self.cache.assignments)
         self.category_section.category_list.clear()
         assignments = self.get_data_by_label(user_label)
         data = self.get_category_data_from_cach_by_specified_data(assignments)
@@ -73,7 +73,6 @@ class AIVlog(QtWidgets.QWidget):
     def get_data_by_label(self, user_label):
         # return list of items of the following form: (frame_num, assignment_num_on_this_frame, detection_num_on_this_frame)
         ret_data = []
-        print(self.cache.assignments)
         for frame_num, assignments in self.cache.assignments.items():
             for i, assignment in enumerate(assignments):
                 if assignment[1] == user_label:
@@ -132,9 +131,8 @@ class AIVlog(QtWidgets.QWidget):
         self.assignment_list.clear()
         assignments = self.cache.assignments[cur_frame_num]
         frame_detections = self.cache.all_detections[cur_frame_num]
-        for detection_num, user_label_num in assignments:
+        for detection_num, user_label in assignments:
             dnn_label, box = extract_detection_data(frame_detections[detection_num])
-            user_label = self.cache.labels[user_label_num]
             self.assignment_list.add_assignment(dnn_label, user_label, box, detection_num)
 
     def add_label(self, label):
@@ -177,7 +175,7 @@ class AIVlog(QtWidgets.QWidget):
         cur_frame_num = self.get_cur_frame_num()
         self.cache.unused_detections[cur_frame_num].remove(detection_num)
 
-    def save_project(self):
+    def save_project_into_binary_file(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save project', QDir.homePath())
         if name == '':
             return
@@ -185,25 +183,102 @@ class AIVlog(QtWidgets.QWidget):
             pickle.dump(self.cache, f)
 
 
-    def open_project(self):
+    def save_project_into_db(self):
+        # truncate all tables in db
+        self.truncate_bd()
+
+        template = f"INSERT INTO `Detections` (`detection_id`, `frame_num`, `dnn_label`, `box`) VALUES (%s, %s, %s, %s)"
+        for frame_num, detections in self.cache.all_detections.items():
+            for i, (dnn_label, _, box) in enumerate(detections):
+                box_str = format_bounding_box_tuple_to_str(box)
+                self.data_base.exec_template_query(template, (i, frame_num, dnn_label, box_str))
+
+        template = f"INSERT INTO `Labels`(`label_id`, `name`) VALUES (%s, %s)"
+        for i, label in enumerate(self.cache.labels):
+            self.data_base.exec_template_query(template, (i, label))
+
+        template = f"INSERT INTO `Assignments`(`frame_num`, `label_id`, `detection_id`) VALUES (%s, %s, %s)"
+        for frame_num, assignments in self.cache.assignments.items():
+            for detection_num, label in assignments:
+                label_num = self.cache.labels.index(label)
+                self.data_base.exec_template_query(template, (frame_num, label_num, detection_num))
+
+    def truncate_bd(self):
+        self.data_base.exec_query('SET FOREIGN_KEY_CHECKS=0;')
+        truncates = self.data_base.exec_query(f"SELECT Concat('TRUNCATE TABLE ',table_schema,'.',TABLE_NAME, ';') \
+                                                FROM INFORMATION_SCHEMA.TABLES where  table_schema = '{self.db_name}';").fetchall()
+        for truncate in truncates:
+            self.data_base.exec_query(list(truncate.values())[0])
+
+    def open_project_from_binary_file(self):
         name, _ = QFileDialog.getOpenFileName(self, "Open project", QDir.homePath())
         if name == '':
             return
         with open(name, 'rb') as f:
             self.update_cache(pickle.load(f))
-        self.detection_list.clear()
-        self.label_section.label_list.clear()
-        self.assignment_list.clear()
-        self.category_section.combo_box.clear()
+        self.clear_all_lists()
+        self.extract_data_per_frame_from_cache()
+        self.set_labels_to_label_list(self.cache.labels)
+
+    def open_project_from_db(self):
+        cache = Cache()
+
+        # upload detections
+        cursor = self.data_base.exec_query("SELECT * FROM Detections")
+        detections = self.cache.all_detections
+        while cursor.rownumber < cursor.rowcount:
+            detection = cursor.fetchone()
+            frame_num = detection['frame_num']
+            if not detections.get(frame_num, None):
+                detections[frame_num] = []
+            detections[frame_num].append([detection['dnn_label'], detection['box']])
+
+        # upload labels
+        cursor = self.data_base.exec_query("SELECT * FROM Labels")
+        labels = self.cache.labels
+        while cursor.rownumber < cursor.rowcount:
+            label = cursor.fetchone()
+            labels.append(label['name'])
+
+        # upload assignments
+        cursor = self.data_base.exec_query("SELECT * FROM Assignments")
+        assignments = self.cache.assignments
+        while cursor.rownumber < cursor.rowcount:
+            assignment = cursor.fetchone()
+            frame_num = assignment['frame_num']
+            if not assignments.get(frame_num, None):
+                assignments[frame_num] = []
+            assignments[frame_num].append([assignment['detection_id'], assignment['label_id']])
+
+        #self.define_unused_detections_by_assignments()
+
+        self.update_cache(cache)
+        self.clear_all_lists()
         self.extract_data_per_frame_from_cache()
         self.set_labels_to_label_list(self.cache.labels)
 
 
+    def define_unused_detections_by_assignments(self):
+        for frame_num in self.cache.all_detections.keys():
+            assignments = self.cache.assignments.get(frame_num, None)
+            if assignments:
+                print(frame_num)
+                for assignment in assignments:
+                    print('\t', assignment[0])
+            else:
+                pass
+
+
+    def clear_all_lists(self):
+        self.detection_list.clear()
+        self.label_section.label_list.clear()
+        self.assignment_list.clear()
+        self.category_section.combo_box.clear()
 
     def set_labels_to_label_list(self, labels):
         for i, label in enumerate(labels):
             self.label_section.add_item(label, i)
-            self.category_section.add_label(label, i)
+            self.category_section.add_label(label)
 
 
     def load_video_file(self):
@@ -226,5 +301,4 @@ class AIVlog(QtWidgets.QWidget):
         print('assignments', self.cache.assignments[frame_num])
 
     def update_cache(self, cache):
-        self.cache = cache
-        self.video_player.cache = cache
+        self.video_player.cache = self.cache = cache

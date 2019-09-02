@@ -106,7 +106,6 @@ class VideoPlayer(QtWidgets.QWidget):
             return
 
         cur_frame_num = self.video_stream.cur_frame_num
-        print(self.cache.__dict__)
         self.cur_frame_num_label.setText(str(cur_frame_num))
         if not self.cache.all_detections.get(cur_frame_num, None):
             detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)

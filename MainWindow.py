@@ -16,43 +16,49 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.showFullScreen()
         self.setWindowTitle("AIVlog")
         #self.setStyleSheet("background-color: #eeeeee; color: black; ")
-        self.main_widget = AIVlog(self, screen_size)
+        self.aivlog = AIVlog(self, screen_size)
 
+        self.quit_action = QtWidgets.QAction("&Exit", self)
+        self.quit_action.setShortcut("Ctrl+Q")
+        self.quit_action.setStatusTip('Close The App')
+        self.quit_action.triggered.connect(self.closeApplication)
 
-        self.quitAction = QtWidgets.QAction("&Exit", self)
-        self.quitAction.setShortcut("Ctrl+Q")
-        self.quitAction.setStatusTip('Close The App')
-        self.quitAction.triggered.connect(self.closeApplication)
+        self.open_video_file = QtWidgets.QAction("&Open Video File", self)
+        self.open_video_file.setShortcut("Ctrl+Shift+V")
+        self.open_video_file.setStatusTip('Open .h264 File')
+        self.open_video_file.triggered.connect(self.aivlog.load_video_file)
 
-        self.openVideoFile = QtWidgets.QAction("&Open Video File", self)
-        self.openVideoFile.setShortcut("Ctrl+Shift+V")
-        self.openVideoFile.setStatusTip('Open .h264 File')
-        self.openVideoFile.triggered.connect(self.main_widget.load_video_file)
+        self.save_project_in_binary_file = QtWidgets.QAction('&Save project into file', self)
+        self.save_project_in_binary_file.setShortcut('Ctrl+S')
+        self.save_project_in_binary_file.triggered.connect(self.aivlog.save_project_into_binary_file)
 
+        self.open_project_from_binary_file = QtWidgets.QAction('&Open project from file', self)
+        self.open_project_from_binary_file.setShortcut('Ctrl+O')
+        self.open_project_from_binary_file.triggered.connect(self.aivlog.open_project_from_binary_file)
 
-        self.save_project = QtWidgets.QAction('&Save project', self)
-        self.save_project.setShortcut('Ctrl+S')
-        self.save_project.triggered.connect(self.main_widget.save_project)
+        self.save_project_in_db = QtWidgets.QAction('Save project into db', self)
+        self.save_project_in_db.triggered.connect(self.aivlog.save_project_into_db)
 
-        self.open_project = QtWidgets.QAction('&Open project', self)
-        self.open_project.setShortcut('Ctrl+O')
-        self.open_project.triggered.connect(self.main_widget.open_project)
+        self.open_project_from_db = QtWidgets.QAction('Open project from db', self)
+        self.open_project_from_db.triggered.connect(self.aivlog.open_project_from_db)
 
         self.mainMenu = self.menuBar()
-        self.fileMenu = self.mainMenu.addMenu('&File')
-        self.fileMenu.addAction(self.openVideoFile)
-        self.fileMenu.addAction(self.save_project)
-        self.fileMenu.addAction(self.open_project)
-        self.fileMenu.addAction(self.quitAction)
+        self.file_menu = self.mainMenu.addMenu('&File')
+        self.file_menu.addAction(self.open_video_file)
+        self.file_menu.addAction(self.save_project_in_binary_file)
+        self.file_menu.addAction(self.save_project_in_db)
+        self.file_menu.addAction(self.open_project_from_binary_file)
+        self.file_menu.addAction(self.open_project_from_db)
+        self.file_menu.addAction(self.quit_action)
 
-        self.setCentralWidget(self.main_widget)
+        self.setCentralWidget(self.aivlog)
 
     def closeApplication(self):
         choice = QtWidgets.QMessageBox.question(self, 'Message', 'Do you really want to exit?',
                                                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         if choice == QtWidgets.QMessageBox.Yes:
             print("Closing....")
-            self.main_widget.close()
+            self.aivlog.close()
             sys.exit()
         else:
             pass
