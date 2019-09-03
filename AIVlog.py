@@ -51,16 +51,16 @@ class AIVlog(QtWidgets.QWidget):
         self.isVideoFileLoaded = False
 
     def change_category(self, user_label):
-        self.category_section.category_list.clear()
-        assignments = self.get_data_by_label(user_label)
-        data = self.get_category_data_from_cach_by_specified_data(assignments)
+        assignments = self.get_data_from_assignments_by_label(user_label)
+        data = self.get_category_data_by_assignments(assignments)
         self.update_category_list(data)
 
     def update_category_list(self, data):
+        self.category_section.category_list.clear()
         for frame_num, bouding_box, dnn_label in data:
             self.category_section.category_list.add_item(f'{frame_num}\t{bouding_box}\t{dnn_label}')
 
-    def get_category_data_from_cach_by_specified_data(self, assignments):
+    def get_category_data_by_assignments(self, assignments):
         # return list of items of the following form: (frame_num, bounding_box, dnn_label)
         ret_list = []
         for frame_num, _, detection_num in assignments:
@@ -68,9 +68,7 @@ class AIVlog(QtWidgets.QWidget):
             ret_list.append([frame_num, box, dnn_label])
         return ret_list
 
-
-
-    def get_data_by_label(self, user_label):
+    def get_data_from_assignments_by_label(self, user_label):
         # return list of items of the following form: (frame_num, assignment_num_on_this_frame, detection_num_on_this_frame)
         ret_data = []
         for frame_num, assignments in self.cache.assignments.items():
@@ -81,11 +79,13 @@ class AIVlog(QtWidgets.QWidget):
 
     def del_assignment_by_detection_num(self, detection_num):
         cur_frame_num = self.get_cur_frame_num()
+        self.add_unused_detection(detection_num, cur_frame_num)
+        self.del_assignment_from_cache(detection_num, cur_frame_num)
+
+    def add_unused_detection(self, detection_num, cur_frame_num):
         detection_str = format_detection_to_print_out(self.cache.all_detections[cur_frame_num][detection_num])
         self.detection_list.add_item(detection_num, detection_str)
         self.cache.unused_detections[cur_frame_num].append(detection_num)
-        self.del_assignment_from_cache(detection_num, cur_frame_num)
-
 
     def assign_label(self, user_label, user_label_num, detection_num):
         cur_frame_num = self.get_cur_frame_num()
@@ -96,8 +96,7 @@ class AIVlog(QtWidgets.QWidget):
 
         self.detection_list.del_dragged_item()
         self.del_unused_detection_from_cache(detection_num)
-        if self.category_section.check_cur_item_by_label(user_label):
-            self.change_category(user_label)
+        self.update_cur_category(user_label)
 
 
     def save_assignment_to_cache(self, detection_num, label):
@@ -111,6 +110,9 @@ class AIVlog(QtWidgets.QWidget):
         assignment_num_to_del = indices[0]
         user_label = self.cache.assignments[cur_frame_num][assignment_num_to_del][1]
         del self.cache.assignments[cur_frame_num][assignment_num_to_del]
+        self.update_cur_category(user_label)
+
+    def update_cur_category(self, user_label):
         if self.category_section.check_cur_item_by_label(user_label):
             self.change_category(user_label)
 
@@ -135,33 +137,35 @@ class AIVlog(QtWidgets.QWidget):
             dnn_label, box = extract_detection_data(frame_detections[detection_num])
             self.assignment_list.add_assignment(dnn_label, user_label, box, detection_num)
 
+
+    def check_label(self, label):
+        if label == '':
+            return False
+        return True
+
     def add_label(self, label):
         self.cache.labels.append(label)
-        label_index = len(self.cache.labels) - 1
         self.category_section.add_label(label)
-        return label_index
 
-    def del_label_from_cache(self, user_label, user_label_index):
-        self.del_category(user_label_index)
+    def del_label_from_cache(self, user_label):
+        self.del_category(user_label)
         # instructions order is important!!
         self.cache.labels.remove(user_label)
-        #call it as the last instruction since it spoil label indices link between lists
-        self.del_assignments_by_label(user_label_index)
+        self.del_assignments_by_label(user_label)
 
-    def del_category(self, user_label_index):
-        self.category_section.del_item_by_text(self.cache.labels[user_label_index])
+    def del_category(self, user_label):
+        self.category_section.del_item_by_text(user_label)
 
-    def del_assignments_by_label(self, user_label_index):
+    def del_assignments_by_label(self, user_label):
 
         cur_frame_num = self.get_cur_frame_num()
         if not cur_frame_num:
             return
-        assignments = self.get_data_by_label(user_label_index)
+        assignments = self.get_data_from_assignments_by_label(user_label)
         assignment_indices = []
         for frame_num, assignment_num, detection_num in assignments:
             self.del_assignment_by_detection_num(detection_num)
 
-            #self.change_category(user_label_num)
             if frame_num == cur_frame_num:
                 assignment_indices.append(assignment_num)
 
@@ -169,7 +173,6 @@ class AIVlog(QtWidgets.QWidget):
         assignment_indices.sort(reverse=True)
         for assignment_index in assignment_indices:
             self.assignment_list.takeItem(assignment_index)
-        #self.print_out_cache_per_frame(15)
 
     def del_unused_detection_from_cache(self, detection_num):
         cur_frame_num = self.get_cur_frame_num()
@@ -250,24 +253,20 @@ class AIVlog(QtWidgets.QWidget):
                 assignments[frame_num] = []
             assignments[frame_num].append([assignment['detection_id'], assignment['label_id']])
 
-        #self.define_unused_detections_by_assignments()
+        self.define_unused_detections_by_assignments()
 
         self.update_cache(cache)
         self.clear_all_lists()
         self.extract_data_per_frame_from_cache()
         self.set_labels_to_label_list(self.cache.labels)
 
-
     def define_unused_detections_by_assignments(self):
-        for frame_num in self.cache.all_detections.keys():
+        for frame_num, detections in self.cache.all_detections.items():
+            all_detection_nums = set(range(len(detections)))
             assignments = self.cache.assignments.get(frame_num, None)
-            if assignments:
-                print(frame_num)
-                for assignment in assignments:
-                    print('\t', assignment[0])
-            else:
-                pass
-
+            assignment_detection_nums = set(assignment[0] for assignment in assignments) if assignments else []
+            unused_detection_nums = all_detection_nums - assignment_detection_nums
+            self.cache.unused_detections[frame_num] = unused_detection_nums
 
     def clear_all_lists(self):
         self.detection_list.clear()

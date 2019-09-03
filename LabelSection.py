@@ -4,7 +4,7 @@ from SelfRemovingWidget import SelfRemovingWidget
 from Utils import remove_item_from_list
 
 class LabelSection(QtWidgets.QWidget):
-    label_removing = QtCore.pyqtSignal(str, int)
+    label_removing = QtCore.pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(LabelSection, self).__init__(parent)
@@ -24,16 +24,15 @@ class LabelSection(QtWidgets.QWidget):
 
     def add_entered_label(self):
         label = self.text_box.text()
-        if label == '':
-            return
-        index = self.parent.add_label(label)
-        if index >= 0:
-            self.add_item(label, index)
+        is_valid = self.parent.check_label(label)
+        if is_valid:
+            self.add_item(label)
+            self.parent.add_label(label)
 
-    def add_item(self, label, index):
+    def add_item(self, label):
         self.text_box.clear()
         item = QtWidgets.QListWidgetItem(self.label_list)
-        item_widget = SelfRemovingWidget(label, 'Delete the label', index)
+        item_widget = SelfRemovingWidget(label, 'Delete the label')
         item.setSizeHint(item_widget.sizeHint())
         item_widget.button.clicked.connect(
             lambda checked, l=self.label_list, it=item: self.remove_item(l, it))
@@ -41,7 +40,7 @@ class LabelSection(QtWidgets.QWidget):
 
     def remove_item(self, list_widget, item):
         item_widget = list_widget.itemWidget(item)
-        self.label_removing.emit(item_widget.label.text(), item_widget.value)
+        self.label_removing.emit(item_widget.label.text())
         remove_item_from_list(list_widget, item)
 
 
