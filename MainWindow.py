@@ -28,27 +28,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_video_file.setStatusTip('Open .h264 File')
         self.open_video_file.triggered.connect(self.aivlog.load_video_file)
 
-        self.save_project_in_binary_file = QtWidgets.QAction('&Save project into file', self)
-        self.save_project_in_binary_file.setShortcut('Ctrl+S')
-        self.save_project_in_binary_file.triggered.connect(self.aivlog.save_project_into_binary_file)
+        self.save_project_as = QtWidgets.QAction('Save project as', self)
+        self.save_project_as.triggered.connect(self.aivlog.save_as)
 
-        self.open_project_from_binary_file = QtWidgets.QAction('&Open project from file', self)
-        self.open_project_from_binary_file.setShortcut('Ctrl+O')
-        self.open_project_from_binary_file.triggered.connect(self.aivlog.open_project_from_binary_file)
-
-        self.save_project_in_db = QtWidgets.QAction('Save project into db', self)
-        self.save_project_in_db.triggered.connect(self.aivlog.save_project_into_db)
-
-        self.open_project_from_db = QtWidgets.QAction('Open project from db', self)
+        self.open_project_from_db = QtWidgets.QAction('Open project', self)
         self.open_project_from_db.triggered.connect(self.aivlog.open_project_from_db)
+
+        self.save_project = QtWidgets.QAction('Save project', self)
+        self.save_project.triggered.connect(self.aivlog.save)
 
         self.mainMenu = self.menuBar()
         self.file_menu = self.mainMenu.addMenu('&File')
         self.file_menu.addAction(self.open_video_file)
-        self.file_menu.addAction(self.save_project_in_binary_file)
-        self.file_menu.addAction(self.save_project_in_db)
-        self.file_menu.addAction(self.open_project_from_binary_file)
         self.file_menu.addAction(self.open_project_from_db)
+        self.file_menu.addAction(self.save_project)
+        self.file_menu.addAction(self.save_project_as)
         self.file_menu.addAction(self.quit_action)
 
         self.setCentralWidget(self.aivlog)

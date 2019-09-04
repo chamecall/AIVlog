@@ -1,8 +1,7 @@
 from PyQt5 import QtWidgets, QtCore
-import cv2
 from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
-                             QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
+                             QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QInputDialog)
 from DetectionList import DetectionList
 from VideoStream import VideoStream
 from VideoPlayer import VideoPlayer
@@ -11,7 +10,6 @@ from AssignmentList import AssignmentList
 from Cache import Cache
 from CategorySection import CategorySection
 from Utils import format_detection_to_print_out, extract_detection_data, format_bounding_box_tuple_to_str
-import pickle
 from DB import DB
 
 class AIVlog(QtWidgets.QWidget):
@@ -30,8 +28,8 @@ class AIVlog(QtWidgets.QWidget):
         self.list_hbox.addWidget(self.detection_list)
         self.list_hbox.addWidget(self.label_section)
         self.list_hbox.addWidget(self.assignment_list)
-        self.db_name = 'vlog_db'
-        self.data_base = DB('localhost', 'root', 'root', self.db_name)
+        self.db_name = ''
+        self.data_base = None
         self.cache = Cache()
         self.main_vbox = QVBoxLayout(self)
         self.video_player = VideoPlayer(self.cache, screen_size)
@@ -48,7 +46,7 @@ class AIVlog(QtWidgets.QWidget):
         self.main_vbox.addLayout(self.list_hbox)
         self.main_vbox.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.video_file_name = None
-        self.isVideoFileLoaded = False
+        self.is_video_loaded = False
 
     def change_category(self, user_label):
         assignments = self.get_data_from_assignments_by_label(user_label)
@@ -131,7 +129,7 @@ class AIVlog(QtWidgets.QWidget):
     def extract_data_per_frame_from_cache(self):
 
         cur_frame_num = self.get_cur_frame_num()
-        if not cur_frame_num or not self.cache.all_detections.get(cur_frame_num, None):
+        if not self.is_video_loaded or not self.cache.all_detections.get(cur_frame_num, None):
             return
         detections = [self.cache.all_detections[cur_frame_num][unused_detection_num] for unused_detection_num in self.cache.unused_detections[cur_frame_num]]
         self.detection_list.set_detections(detections)
@@ -166,7 +164,7 @@ class AIVlog(QtWidgets.QWidget):
 
     def del_assignments_by_label(self, user_label):
         cur_frame_num = self.get_cur_frame_num()
-        if not cur_frame_num:
+        if not self.is_video_loaded:
             return
         assignments = self.get_data_from_assignments_by_label(user_label)
         assignment_indices = []
@@ -186,15 +184,33 @@ class AIVlog(QtWidgets.QWidget):
         cur_frame_num = self.get_cur_frame_num()
         self.cache.unused_detections[cur_frame_num].remove(detection_num)
 
-    def save_project_into_binary_file(self):
-        name, _ = QFileDialog.getSaveFileName(self, 'Save project', QDir.homePath())
-        if name == '':
+
+    def save(self):
+        if not self.is_video_loaded or self.data_base is None:
             return
-        with open(name, 'wb') as f:
-            pickle.dump(self.cache, f)
+        self.upload_data_from_cache_to_db()
 
 
-    def save_project_into_db(self):
+    def save_as(self):
+        if not self.is_video_loaded:
+            return
+        text, ok = QInputDialog.getText(self, 'DataBase name input', 'Enter database name for data storing:')
+
+        if ok:
+            self.db_name = text
+            self.data_base = DB('localhost', 'root', 'root', self.db_name)
+            self.upload_data_from_cache_to_db()
+
+            name, _ = QFileDialog.getSaveFileName(self, 'Save project', QDir.homePath())
+            if name == '':
+                return
+
+            with open(name, 'w') as project_file:
+                project_file.write('\n'.join([self.video_file_name, self.db_name]))
+
+
+
+    def upload_data_from_cache_to_db(self):
         # truncate all tables in db
         self.truncate_bd()
 
@@ -211,7 +227,11 @@ class AIVlog(QtWidgets.QWidget):
         template = f"INSERT INTO `Assignments`(`frame_num`, `label_id`, `detection_id`) VALUES (%s, %s, %s)"
         for frame_num, assignments in self.cache.assignments.items():
             for detection_num, label in assignments:
+                print(self.cache.labels)
+                print(label)
                 label_num = self.cache.labels.index(label)
+                print(label_num)
+                print('----')
                 self.data_base.exec_template_query(template, (frame_num, label_num, detection_num))
 
     def truncate_bd(self):
@@ -221,17 +241,22 @@ class AIVlog(QtWidgets.QWidget):
         for truncate in truncates:
             self.data_base.exec_query(list(truncate.values())[0])
 
-    def open_project_from_binary_file(self):
+
+    def open_project_from_db(self):
         name, _ = QFileDialog.getOpenFileName(self, "Open project", QDir.homePath())
         if name == '':
             return
-        with open(name, 'rb') as f:
-            self.update_cache(pickle.load(f))
-        self.clear_all_lists()
-        self.extract_data_per_frame_from_cache()
-        self.set_labels_to_label_list(self.cache.labels)
+        with open(name, 'r') as project_file:
+            self.video_file_name = project_file.readline().strip()
+            self.db_name = project_file.readline().strip()
 
-    def open_project_from_db(self):
+            self.data_base = DB('localhost', 'root', 'root', self.db_name)
+            self.is_video_loaded = True
+            self.video_player.set_video_stream(VideoStream(self.video_file_name))
+            self.load_data_from_db_to_cache()
+
+
+    def load_data_from_db_to_cache(self):
         cache = Cache()
 
         # upload detections
@@ -247,10 +272,12 @@ class AIVlog(QtWidgets.QWidget):
 
         # upload labels
         cursor = self.data_base.exec_query("SELECT * FROM Labels")
-        cache.labels = []
+        labels = []
         while cursor.rownumber < cursor.rowcount:
             label = cursor.fetchone()
-            cache.labels.append(label['name'])
+            labels.append([label['label_id'], label['name']])
+        labels.sort(key=lambda label_pair: label_pair[0])
+        cache.labels = [label_pair[1] for label_pair in labels]
 
         # upload assignments
         cursor = self.data_base.exec_query("SELECT * FROM Assignments")
@@ -294,10 +321,9 @@ class AIVlog(QtWidgets.QWidget):
 
 
     def load_video_file(self):
-        #self.video_file_name, _ = QFileDialog.getOpenFileName(self, "Open Movie", QDir.homePath())
-        self.video_file_name = 'sample.mkv'
+        self.video_file_name, _ = QFileDialog.getOpenFileName(self, "Open Movie", QDir.homePath())
         if not self.video_file_name == '':
-            self.isVideoFileLoaded = True
+            self.is_video_loaded = True
             self.video_player.set_video_stream(VideoStream(self.video_file_name))
 
     def close(self):

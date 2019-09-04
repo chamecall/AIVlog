@@ -19,7 +19,6 @@ def convertBack(x, y, w, h):
 def cvDrawBoxes(detections, img):
 
     for i, detection in enumerate(detections, 1):
-        print(detection)
         x, y, w, h = detection[1][0], \
                      detection[1][1], \
                      detection[1][2], \
