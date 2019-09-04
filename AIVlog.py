@@ -200,7 +200,7 @@ class AIVlog(QtWidgets.QWidget):
 
         template = f"INSERT INTO `Detections` (`detection_id`, `frame_num`, `dnn_label`, `box`) VALUES (%s, %s, %s, %s)"
         for frame_num, detections in self.cache.all_detections.items():
-            for i, (dnn_label, _, box) in enumerate(detections):
+            for i, (dnn_label, box) in enumerate(detections):
                 box_str = format_bounding_box_tuple_to_str(box)
                 self.data_base.exec_template_query(template, (i, frame_num, dnn_label, box_str))
 
