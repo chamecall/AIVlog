@@ -19,10 +19,11 @@ def convertBack(x, y, w, h):
 def cvDrawBoxes(detections, img):
 
     for i, detection in enumerate(detections, 1):
-        x, y, w, h = detection[2][0], \
-                     detection[2][1], \
-                     detection[2][2], \
-                     detection[2][3]
+        print(detection)
+        x, y, w, h = detection[1][0], \
+                     detection[1][1], \
+                     detection[1][2], \
+                     detection[1][3]
         xmin, ymin, xmax, ymax = convertBack(
             float(x), float(y), float(w), float(h))
         pt1 = (xmin, ymin)
