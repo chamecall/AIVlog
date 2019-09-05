@@ -5,7 +5,7 @@ from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
 from PyQt5 import QtGui
-from Recognizer import Recognizer, cvDrawBoxes
+#from Recognizer import Recognizer, cvDrawBoxes
 import numpy as np
 from Detector import Detector
 import Cache
@@ -17,7 +17,6 @@ class VideoPlayer(QtWidgets.QWidget):
     def __init__(self, cache: Cache, screen_size: tuple, parent=None):
         super(VideoPlayer, self).__init__(parent)
         # cache - {frame_num: detections}
-        #self.recognizer = None
         self.cache = cache
         self.frame_size = self.define_frame_size(screen_size)
         self.detector = Detector('detections.json')
@@ -82,7 +81,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.position_slider.sliderReleased.connect(self.release_slider)
         #print(self.video_stream.width, self.video_stream.height)
         self.frames_count_label.setText(str(self.video_stream.frame_count))
-        self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
+        #self.recognizer = Recognizer(self.video_stream.width, self.video_stream.height)
         self.update_frame()
 
     def update_frame(self):
@@ -108,8 +107,8 @@ class VideoPlayer(QtWidgets.QWidget):
         cur_frame_num = self.video_stream.cur_frame_num
         self.cur_frame_num_label.setText(str(cur_frame_num))
         if not self.cache.all_detections.get(cur_frame_num, None):
-            #detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
-            detections = self.recognizer.forward(np_arr_frame)
+            detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
+            #detections = self.recognizer.forward(np_arr_frame)
             detections = [[detection[0].decode(), [int(num) for num in detection[2]]] for detection in detections]
 
             self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
@@ -117,7 +116,6 @@ class VideoPlayer(QtWidgets.QWidget):
             detections = self.cache.all_detections[cur_frame_num]
             self.cache_signal.emit()
         boxed_frame = cvDrawBoxes(detections, np_arr_frame)
-        #proccessed_frame = self.recognizer.forward(np_arr_frame)
         pix = self.image_from_np_to_pix(boxed_frame)
         self.set_pix(pix)
 
