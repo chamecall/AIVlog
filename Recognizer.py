@@ -5,7 +5,7 @@ import os
 import cv2
 import numpy as np
 import time
-#import darknet
+import darknet
 from Utils import format_detection_to_print_out
 
 def convertBack(x, y, w, h):
@@ -92,10 +92,10 @@ class Recognizer:
 
         darknet.copy_image_from_bytes(self.darknet_image, frame_resized.tobytes())
 
-        detections = darknet.detect_image(netMain, metaMain, self.darknet_image, thresh=0.15)
+        detections = darknet.detect_image(netMain, metaMain, self.darknet_image, thresh=0.30)
 
-        image = cvDrawBoxes(detections, frame_resized)
+        #image = cvDrawBoxes(detections, frame_resized)
         # cv2.imshow('ff', image)
         # cv2.waitKey(1)
-        return image
+        return detections
 

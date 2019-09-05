@@ -22,7 +22,6 @@ class CategorySection(QtWidgets.QWidget):
         self.combo_box.addItem(label)
 
     def current_index_changed(self, index):
-        print('current text is', str(self.combo_box.currentText()))
         self.category_changing.emit(str(self.combo_box.currentText()))
 
     def check_cur_item_by_label(self, user_label):

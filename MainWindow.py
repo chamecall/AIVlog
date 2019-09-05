@@ -37,12 +37,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_project = QtWidgets.QAction('Save project', self)
         self.save_project.triggered.connect(self.aivlog.save)
 
+        self.generate_dataset = QtWidgets.QAction('Generate dataset')
+        self.generate_dataset.triggered.connect(self.aivlog.generate_dnn_input_data)
+
         self.mainMenu = self.menuBar()
         self.file_menu = self.mainMenu.addMenu('&File')
         self.file_menu.addAction(self.open_video_file)
         self.file_menu.addAction(self.open_project_from_db)
         self.file_menu.addAction(self.save_project)
         self.file_menu.addAction(self.save_project_as)
+        self.file_menu.addAction(self.generate_dataset)
         self.file_menu.addAction(self.quit_action)
 
         self.setCentralWidget(self.aivlog)

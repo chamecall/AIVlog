@@ -11,6 +11,9 @@ from Cache import Cache
 from CategorySection import CategorySection
 from Utils import format_detection_to_print_out, extract_detection_data, format_bounding_box_tuple_to_str
 from DB import DB
+import os
+from Utils import get_index_by_value, generate_yolo_style_object_detection_row
+import glob
 
 class AIVlog(QtWidgets.QWidget):
     def __init__(self, parent, screen_size: tuple):
@@ -227,11 +230,9 @@ class AIVlog(QtWidgets.QWidget):
         template = f"INSERT INTO `Assignments`(`frame_num`, `label_id`, `detection_id`) VALUES (%s, %s, %s)"
         for frame_num, assignments in self.cache.assignments.items():
             for detection_num, label in assignments:
-                print(self.cache.labels)
-                print(label)
+
                 label_num = self.cache.labels.index(label)
-                print(label_num)
-                print('----')
+
                 self.data_base.exec_template_query(template, (frame_num, label_num, detection_num))
 
     def truncate_bd(self):
@@ -325,6 +326,112 @@ class AIVlog(QtWidgets.QWidget):
         if not self.video_file_name == '':
             self.is_video_loaded = True
             self.video_player.set_video_stream(VideoStream(self.video_file_name))
+
+
+    def generate_dnn_input_data(self):
+        input_data_dir = QFileDialog.getExistingDirectory(self, "Open dataset directory", QDir.homePath())
+        if not input_data_dir == '':
+            labels_dir_path = os.path.join(input_data_dir, 'labels')
+            names_file_name = os.path.join(input_data_dir, 'data.names')
+            self.make_dir(labels_dir_path)
+            # folder containing image-detection_file pairs
+            labels = self.generate_dataset(labels_dir_path)
+            labels_num = len(labels)
+            test_data_file_name, train_data_file_name = os.path.join(input_data_dir, 'test.txt'), os.path.join(input_data_dir, 'train.txt')
+            # separate data to train and test
+            self.separate_data(labels_dir_path, test_data_file_name, train_data_file_name)
+            # .names file
+            self.generate_names_file(names_file_name, labels)
+            backup_dir = os.path.join(input_data_dir, 'backup')
+            data_file_name = os.path.join(input_data_dir, 'data.data')
+            self.make_dir(backup_dir)
+            # .data file
+            self.generate_data_file(data_file_name, labels_num, train_data_file_name, test_data_file_name, names_file_name, backup_dir)
+
+            original_cfg_file_name = 'cfg/yolov3.cfg'
+            result_cfg_file_name = os.path.join(input_data_dir, 'yolov3.cfg')
+
+            self.generate_cfg_file(original_cfg_file_name, result_cfg_file_name, labels_num)
+
+    @staticmethod
+    def generate_cfg_file(orig_cfg_file, result_cfg_file, labels_num):
+        filters_row_nums = [603, 689, 776]
+        classes_row_nums = [610, 696, 783]
+
+        with open(orig_cfg_file, 'r') as original_cfg:
+            cfg = original_cfg.readlines()
+        filters_str = f'filters={(labels_num + 5) * 3}\n'
+        classes_str = f'classes={labels_num}\n'
+
+        for filters_row_num in filters_row_nums:
+            cfg[filters_row_num-1] = filters_str
+
+        for classes_row_num in classes_row_nums:
+            cfg[classes_row_num-1] = classes_str
+
+        with open(result_cfg_file, 'w') as result_cfg:
+            result_cfg.writelines(cfg)
+
+
+    @staticmethod
+    def generate_data_file(data_file, classes_num, train_file, test_file, names_file, backup_dir):
+        with open(data_file, 'w') as data_file:
+            data_file.write(f'classes = {classes_num}\n')
+            data_file.write(f'train = {train_file}\n')
+            data_file.write(f'valid = {test_file}\n')
+            data_file.write(f'names = {names_file}\n')
+            data_file.write(f'backup = {backup_dir}\n')
+
+
+
+    @staticmethod
+    def separate_data(labels_dir, test_data_file_name, train_data_file_name):
+        current_dir = labels_dir
+        percentage_test = 15
+        file_train = open(train_data_file_name, 'w')
+        file_test = open(test_data_file_name, 'w')
+
+        counter = 1
+        index_test = round(100 / percentage_test)
+        for pathAndFilename in glob.iglob(os.path.join(current_dir, "*.jpg")):
+            title, ext = os.path.splitext(os.path.basename(pathAndFilename))
+
+            if counter == index_test:
+                counter = 1
+                file_test.write(current_dir + "/" + title + '.jpg' + "\n")
+            else:
+                file_train.write(current_dir + "/" + title + '.jpg' + "\n")
+                counter = counter + 1
+
+    def generate_names_file(self, names_file_name, labels):
+        with open(names_file_name, 'w') as names_file:
+            for label in labels:
+                names_file.write(f'{label}\n')
+
+
+    def generate_dataset(self, labels_dir_path):
+        labels = []
+        frame_width = self.video_player.video_stream.width
+        frame_height = self.video_player.video_stream.height
+        for frame_num, assignments in self.cache.assignments.items():
+            if assignments:
+                frame_name = os.path.join(labels_dir_path, f'frame_{frame_num}')
+                self.video_player.video_stream.save_frame_by_num_as(frame_num, f'{frame_name}.jpg')
+                with open(f'{frame_name}.txt', 'w') as label_txt:
+                    for detection_num, label in assignments:
+                        detection = self.cache.all_detections[frame_num][detection_num]
+                        box = detection[1]
+                        index = get_index_by_value(labels, label)
+                        object_detection_row = generate_yolo_style_object_detection_row(index, box, frame_width,
+                                                                                        frame_height)
+                        label_txt.write(object_detection_row)
+        return labels
+
+    def make_dir(self, dir_name):
+        try:
+            os.mkdir(dir_name)
+        except:
+            print('failed to create directory')
 
     def close(self):
         self.video_player.close()

@@ -61,3 +61,15 @@ class VideoStream(QtWidgets.QWidget):
         self.set_position(self.cur_frame_num)
         if ret:
             return frame
+
+    def get_frame(self, frame_num):
+        self.set_position(frame_num)
+        ret, frame = self.cap.read()
+        self.set_position(self.cur_frame_num)
+        if ret:
+            return frame
+
+
+    def save_frame_by_num_as(self, frame_num, image_name):
+        frame = self.get_frame(frame_num)
+        cv2.imwrite(image_name, frame)
