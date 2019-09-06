@@ -5,7 +5,7 @@ import os
 import cv2
 import numpy as np
 import time
-import darknet
+#import darknet
 from Utils import format_detection_to_print_out
 
 def convertBack(x, y, w, h):

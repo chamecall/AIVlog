@@ -5,7 +5,7 @@ from PyQt5.QtCore import QDir, Qt, QUrl
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget)
 from PyQt5 import QtGui
-#from Recognizer import Recognizer, cvDrawBoxes
+from Recognizer import Recognizer, cvDrawBoxes
 import numpy as np
 from Detector import Detector
 import Cache
@@ -109,7 +109,7 @@ class VideoPlayer(QtWidgets.QWidget):
         if not self.cache.all_detections.get(cur_frame_num, None):
             detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
             #detections = self.recognizer.forward(np_arr_frame)
-            detections = [[detection[0].decode(), [int(num) for num in detection[2]]] for detection in detections]
+            detections = [[detection[0], [int(num) for num in detection[2]]] for detection in detections]
 
             self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
         else:
