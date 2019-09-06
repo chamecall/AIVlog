@@ -23,10 +23,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.quit_action.setStatusTip('Close The App')
         self.quit_action.triggered.connect(self.closeApplication)
 
-        self.open_video_file = QtWidgets.QAction("&Open Video File", self)
-        self.open_video_file.setShortcut("Ctrl+Shift+V")
-        self.open_video_file.setStatusTip('Open .h264 File')
-        self.open_video_file.triggered.connect(self.aivlog.load_video_file)
+        self.create_project = QtWidgets.QAction("&New project", self)
+        self.create_project.setShortcut("Ctrl+Shift+V")
+        self.create_project.setStatusTip('Open .h264 File')
+        self.create_project.triggered.connect(self.aivlog.create_project)
 
         self.save_project_as = QtWidgets.QAction('Save project as', self)
         self.save_project_as.triggered.connect(self.aivlog.save_as)
@@ -42,7 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.mainMenu = self.menuBar()
         self.file_menu = self.mainMenu.addMenu('&File')
-        self.file_menu.addAction(self.open_video_file)
+        self.file_menu.addAction(self.create_project)
         self.file_menu.addAction(self.open_project_from_db)
         self.file_menu.addAction(self.save_project)
         self.file_menu.addAction(self.save_project_as)

@@ -190,8 +190,9 @@ class AIVlog(QtWidgets.QWidget):
 
     def save(self):
         if not self.is_video_loaded or self.data_base is None:
-            return
-        self.upload_data_from_cache_to_db()
+            self.save_as()
+        else:
+            self.upload_data_from_cache_to_db()
 
 
     def save_as(self):
@@ -321,7 +322,7 @@ class AIVlog(QtWidgets.QWidget):
             self.category_section.add_label(label)
 
 
-    def load_video_file(self):
+    def create_project(self):
         self.video_file_name, _ = QFileDialog.getOpenFileName(self, "Open Movie", QDir.homePath())
         if not self.video_file_name == '':
             self.is_video_loaded = True

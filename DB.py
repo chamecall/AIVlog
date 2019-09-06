@@ -62,6 +62,60 @@ class DB:
                 ENGINE = InnoDB
                 DEFAULT CHARACTER SET = utf8;''')
 
+        self.exec_query('''CREATE TABLE IF NOT EXISTS `Media` (
+              `media_id` INT(11) NOT NULL,
+              `file_name` VARCHAR(255) NOT NULL,
+              `type` ENUM('I', 'V', 'A', 'T') NOT NULL,
+              `duration` INT UNSIGNED NOT NULL DEFAULT 0,
+              PRIMARY KEY (`media_id`))
+                ENGINE = InnoDB
+            DEFAULT CHARACTER SET = utf8;''')
+
+        self.exec_query('''CREATE TABLE IF NOT EXISTS `CommandType` (
+              `command_type_id` INT(11) NOT NULL,
+              `name` VARCHAR(128) NOT NULL,
+              PRIMARY KEY (`command_type_id`))
+            ENGINE = InnoDB
+            DEFAULT CHARACTER SET = utf8;''')
+
+
+        self.exec_query('''CREATE TABLE IF NOT EXISTS `Command` (
+              `command_id` INT(11) NOT NULL,
+              `type` VARCHAR(128) NOT NULL,
+              `trigger_event_id` INT NOT NULL,
+              `attached_character_class` INT NOT NULL,
+              `relation_class` INT NOT NULL,
+              `command_type_id` INT NOT NULL,
+              `media_id` INT NOT NULL,
+              `duration` INT NOT NULL,
+              PRIMARY KEY (`command_id`),
+              INDEX `fk_Command_1_idx` (`media_id` ASC),
+              INDEX `fk_Command_2_idx` (`command_type_id` ASC),
+              INDEX `fk_Command_3_idx` (`attached_character_class` ASC),
+              INDEX `fk_Command_4_idx` (`relation_class` ASC),
+              CONSTRAINT `fk_Command_1`
+                FOREIGN KEY (`media_id`)
+                REFERENCES `ali`.`Media` (`media_id`)
+                ON DELETE NO ACTION
+                ON UPDATE NO ACTION,
+              CONSTRAINT `fk_Command_2`
+                FOREIGN KEY (`command_type_id`)
+                REFERENCES `ali`.`CommandType` (`command_type_id`)
+                ON DELETE NO ACTION
+                ON UPDATE NO ACTION,
+              CONSTRAINT `fk_Command_3`
+                FOREIGN KEY (`attached_character_class`)
+                REFERENCES `ali`.`Labels` (`label_id`)
+                ON DELETE NO ACTION
+                ON UPDATE NO ACTION,
+              CONSTRAINT `fk_Command_4`
+                FOREIGN KEY (`relation_class`)
+                REFERENCES `ali`.`Labels` (`label_id`)
+                ON DELETE NO ACTION
+                ON UPDATE NO ACTION)
+            ENGINE = InnoDB
+            DEFAULT CHARACTER SET = utf8;''')
+
         self.exec_query('SET SQL_MODE=@OLD_SQL_MODE;')
         self.exec_query('SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;')
         self.exec_query('SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;')
