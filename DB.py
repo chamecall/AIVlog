@@ -81,6 +81,7 @@ class DB:
 
         self.exec_query(f'''CREATE TABLE IF NOT EXISTS `Command` (
               `command_id` INT(11) NOT NULL,
+                `name` VARCHAR(128) NOT NULL,
               `type` VARCHAR(128) NOT NULL,
               `trigger_event_id` INT NOT NULL,
               `attached_character_class` INT NOT NULL,
