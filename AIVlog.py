@@ -36,7 +36,7 @@ class AIVlog(QtWidgets.QWidget):
         self.cache = Cache()
         self.main_vbox = QVBoxLayout(self)
         self.video_player = VideoPlayer(self.cache, screen_size)
-        self.video_player.detection_signal.connect(self.save_detections_to_cache)
+        self.video_player.detection_signal.connect(self.update_data_per_frame)
         self.video_player.cache_signal.connect(self.extract_data_per_frame_from_cache)
 
         self.category_section = CategorySection(self)
@@ -122,8 +122,10 @@ class AIVlog(QtWidgets.QWidget):
         if self.category_section.check_cur_item_by_label(user_label):
             self.change_category(user_label)
 
-    def save_detections_to_cache(self, frame_num, detections):
-        self.detection_list.set_detections(detections)
+    def update_data_per_frame(self, frame_num, detections):
+        numbered_detections = [[i, [detection[0], [int(num) for num in detection[1]]]] for i, detection in
+                               enumerate(detections)]
+        self.detection_list.set_detections(numbered_detections)
         self.cache.all_detections[frame_num] = detections
         self.cache.unused_detections[frame_num] = list(range(len(detections)))
         self.cache.assignments[frame_num] = []

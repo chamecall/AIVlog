@@ -35,7 +35,7 @@ class DB:
                   PRIMARY KEY (`detection_id`, `frame_num`))
                 ENGINE = InnoDB
                 DEFAULT CHARACTER SET = utf8;''')
-        self.exec_query('''CREATE TABLE IF NOT EXISTS `Labels` (
+        self.exec_query(f'''CREATE TABLE IF NOT EXISTS `Labels` (
                   `label_id` INT(11) NOT NULL,
                   `name` VARCHAR(64) NOT NULL,
                   PRIMARY KEY (`label_id`),
@@ -43,7 +43,7 @@ class DB:
                 ENGINE = InnoDB
                 DEFAULT CHARACTER SET = utf8;''')
 
-        self.exec_query('''CREATE TABLE IF NOT EXISTS `Assignments` (
+        self.exec_query(f'''CREATE TABLE IF NOT EXISTS `Assignments` (
                   `frame_num` INT(11) UNSIGNED NOT NULL,
                   `label_id` INT(11) NULL DEFAULT NULL,
                   `detection_id` INT(11) NULL DEFAULT NULL,
@@ -62,7 +62,7 @@ class DB:
                 ENGINE = InnoDB
                 DEFAULT CHARACTER SET = utf8;''')
 
-        self.exec_query('''CREATE TABLE IF NOT EXISTS `Media` (
+        self.exec_query(f'''CREATE TABLE IF NOT EXISTS `Media` (
               `media_id` INT(11) NOT NULL,
               `file_name` VARCHAR(255) NOT NULL,
               `type` ENUM('I', 'V', 'A', 'T') NOT NULL,
@@ -71,7 +71,7 @@ class DB:
                 ENGINE = InnoDB
             DEFAULT CHARACTER SET = utf8;''')
 
-        self.exec_query('''CREATE TABLE IF NOT EXISTS `CommandType` (
+        self.exec_query(f'''CREATE TABLE IF NOT EXISTS `CommandType` (
               `command_type_id` INT(11) NOT NULL,
               `name` VARCHAR(128) NOT NULL,
               PRIMARY KEY (`command_type_id`))
@@ -79,7 +79,7 @@ class DB:
             DEFAULT CHARACTER SET = utf8;''')
 
 
-        self.exec_query('''CREATE TABLE IF NOT EXISTS `Command` (
+        self.exec_query(f'''CREATE TABLE IF NOT EXISTS `Command` (
               `command_id` INT(11) NOT NULL,
               `type` VARCHAR(128) NOT NULL,
               `trigger_event_id` INT NOT NULL,
@@ -95,22 +95,22 @@ class DB:
               INDEX `fk_Command_4_idx` (`relation_class` ASC),
               CONSTRAINT `fk_Command_1`
                 FOREIGN KEY (`media_id`)
-                REFERENCES `ali`.`Media` (`media_id`)
+                REFERENCES `{db_name}`.`Media` (`media_id`)
                 ON DELETE NO ACTION
                 ON UPDATE NO ACTION,
               CONSTRAINT `fk_Command_2`
                 FOREIGN KEY (`command_type_id`)
-                REFERENCES `ali`.`CommandType` (`command_type_id`)
+                REFERENCES `{db_name}`.`CommandType` (`command_type_id`)
                 ON DELETE NO ACTION
                 ON UPDATE NO ACTION,
               CONSTRAINT `fk_Command_3`
                 FOREIGN KEY (`attached_character_class`)
-                REFERENCES `ali`.`Labels` (`label_id`)
+                REFERENCES `{db_name}`.`Labels` (`label_id`)
                 ON DELETE NO ACTION
                 ON UPDATE NO ACTION,
               CONSTRAINT `fk_Command_4`
                 FOREIGN KEY (`relation_class`)
-                REFERENCES `ali`.`Labels` (`label_id`)
+                REFERENCES `{db_name}`.`Labels` (`label_id`)
                 ON DELETE NO ACTION
                 ON UPDATE NO ACTION)
             ENGINE = InnoDB

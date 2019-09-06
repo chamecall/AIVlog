@@ -9,6 +9,7 @@ def format_detection_to_print_out(detection: list):
     return f'{detection[0]} ({",".join(str(int(num)) for num in detection[1])})'
 
 def extract_detection_data(detection: list):
+    print(detection)
     return detection[0], format_bounding_box_tuple_to_str(detection[1])
 
 
