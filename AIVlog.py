@@ -134,7 +134,7 @@ class AIVlog(QtWidgets.QWidget):
         cur_frame_num = self.get_cur_frame_num()
         if not self.is_video_loaded or not self.cache.all_detections.get(cur_frame_num, None):
             return
-        detections = [self.cache.all_detections[cur_frame_num][unused_detection_num] for unused_detection_num in self.cache.unused_detections[cur_frame_num]]
+        detections = [[unused_detection_num, self.cache.all_detections[cur_frame_num][unused_detection_num]] for unused_detection_num in self.cache.unused_detections[cur_frame_num]]
         self.detection_list.set_detections(detections)
         self.upload_data_from_cache_to_assignment_list(cur_frame_num)
 
@@ -185,7 +185,7 @@ class AIVlog(QtWidgets.QWidget):
 
     def del_unused_detection_from_cache(self, detection_num):
         cur_frame_num = self.get_cur_frame_num()
-        self.cache.unused_detections[cur_frame_num].remove(detection_num)
+        #self.cache.unused_detections[cur_frame_num].remove(detection_num)
 
 
     def save(self):
@@ -292,18 +292,18 @@ class AIVlog(QtWidgets.QWidget):
             label = cache.labels[assignment['label_id']]
             cache.assignments[frame_num].append([assignment['detection_id'], label])
 
+        cache.unused_detections = self.define_unused_detections_by_assignments(cache.all_detections, cache.assignments)
         self.update_cache(cache)
-        cache.unused_detections = self.define_unused_detections_by_assignments()
         self.clear_all_lists()
         self.extract_data_per_frame_from_cache()
         self.set_labels_to_label_list(self.cache.labels)
         #self.change_category(self.cache.labels[-1])
 
-    def define_unused_detections_by_assignments(self):
+    def define_unused_detections_by_assignments(self, all_detections, assignments):
         unused_detections = {}
-        for frame_num, detections in self.cache.all_detections.items():
+        for frame_num, detections in all_detections.items():
             all_detection_nums = set(range(len(detections)))
-            assignments = self.cache.assignments.get(frame_num, None)
+            assignments = assignments.get(frame_num, None)
             assignment_detection_nums = set(assignment[0] for assignment in assignments) if assignments else set()
             unused_detection_nums = all_detection_nums - assignment_detection_nums
             unused_detections[frame_num] = list(unused_detection_nums)

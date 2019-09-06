@@ -26,7 +26,9 @@ class DetectionList(QtWidgets.QListWidget):
 
     def set_detections(self, detection_list):
         self.clear()
-        for i, detection in enumerate(detection_list):
+        print(detection_list)
+        for i, detection in detection_list:
+            print(i, detection)
             detection_str = format_detection_to_print_out(detection)
             self.add_item(i, detection_str)
 
