@@ -303,10 +303,11 @@ class AIVlog(QtWidgets.QWidget):
 
     def define_unused_detections_by_assignments(self, all_detections, assignments):
         unused_detections = {}
+
         for frame_num, detections in all_detections.items():
             all_detection_nums = set(range(len(detections)))
-            assignments = assignments.get(frame_num, None)
-            assignment_detection_nums = set(assignment[0] for assignment in assignments) if assignments else set()
+            assignments_per_frame = assignments.get(frame_num, None)
+            assignment_detection_nums = set(assignment[0] for assignment in assignments_per_frame) if assignments_per_frame else set()
             unused_detection_nums = all_detection_nums - assignment_detection_nums
             unused_detections[frame_num] = list(unused_detection_nums)
         return unused_detections
