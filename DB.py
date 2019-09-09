@@ -6,8 +6,7 @@ class DB:
         self.user_name = user_name
         self.password = password
         self.db_name = db_name
-        self.con = pymysql.connect(hostname, user_name, password, cursorclass=pymysql.cursors.DictCursor,
-                                   autocommit=True)
+        self.con = pymysql.connect(hostname, user_name, password, cursorclass=pymysql.cursors.DictCursor)
 
         self.cursor = self.con.cursor()
         self.create_db(db_name)
@@ -15,6 +14,15 @@ class DB:
     def exec_query(self, query: str):
         self.cursor.execute(query)
         return self.cursor
+
+    def exec_many_queries(self, template, data):
+        self.cursor.executemany(template, data)
+
+    def commit(self):
+        self.con.commit()
+
+    def rollback(self):
+        self.con.rollback()
 
     def exec_template_query(self, template, values: tuple):
         self.cursor.execute(template, values)
@@ -120,4 +128,4 @@ class DB:
         self.exec_query('SET SQL_MODE=@OLD_SQL_MODE;')
         self.exec_query('SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;')
         self.exec_query('SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;')
-
+        self.commit()

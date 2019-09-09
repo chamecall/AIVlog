@@ -20,6 +20,9 @@ class LabelList(QtWidgets.QListWidget):
             label = selected_widget.label.text()
             label_num = selected_widget.value
             event.setDropAction(QtCore.Qt.MoveAction)
-            self.assigning.emit(label, label_num, int(detection_num))
+            if detection_num == '':
+                return
+            else:
+                self.assigning.emit(label, label_num, int(detection_num))
 
 

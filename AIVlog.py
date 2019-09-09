@@ -220,23 +220,35 @@ class AIVlog(QtWidgets.QWidget):
         # truncate all tables in db
         self.truncate_bd()
 
-        template = f"INSERT INTO `Detections` (`detection_id`, `frame_num`, `dnn_label`, `box`) VALUES (%s, %s, %s, %s)"
-        for frame_num, detections in self.cache.all_detections.items():
-            for i, (dnn_label, box) in enumerate(detections):
-                box_str = format_bounding_box_tuple_to_str(box)
-                self.data_base.exec_template_query(template, (i, frame_num, dnn_label, box_str))
+        try:
+            template = f"INSERT INTO `Detections` (`detection_id`, `frame_num`, `dnn_label`, `box`) VALUES (%s, %s, %s, %s)"
+            data = []
+            for frame_num, detections in self.cache.all_detections.items():
+                for i, (dnn_label, box) in enumerate(detections):
+                    box_str = format_bounding_box_tuple_to_str(box)
+                    data.append((i, frame_num, dnn_label, box_str))
+            self.data_base.exec_many_queries(template, data)
 
-        template = f"INSERT INTO `Labels`(`label_id`, `name`) VALUES (%s, %s)"
-        for i, label in enumerate(self.cache.labels):
-            self.data_base.exec_template_query(template, (i, label))
 
-        template = f"INSERT INTO `Assignments`(`frame_num`, `label_id`, `detection_id`) VALUES (%s, %s, %s)"
-        for frame_num, assignments in self.cache.assignments.items():
-            for detection_num, label in assignments:
+            template = f"INSERT INTO `Labels`(`label_id`, `name`) VALUES (%s, %s)"
+            data = []
+            for i, label in enumerate(self.cache.labels):
+                data.append((i, label))
+            self.data_base.exec_many_queries(template, data)
 
-                label_num = self.cache.labels.index(label)
+            template = f"INSERT INTO `Assignments`(`frame_num`, `label_id`, `detection_id`) VALUES (%s, %s, %s)"
+            data = []
+            for frame_num, assignments in self.cache.assignments.items():
+                for detection_num, label in assignments:
+                    label_num = self.cache.labels.index(label)
+                    data.append((frame_num, label_num, detection_num))
+            self.data_base.exec_many_queries(template, data)
 
-                self.data_base.exec_template_query(template, (frame_num, label_num, detection_num))
+            self.data_base.commit()
+        except Exception as error:
+            print(f"Failed to update record to database rollback: {error}")
+            self.data_base.rollback()
+
 
     def truncate_bd(self):
         self.data_base.exec_query('SET FOREIGN_KEY_CHECKS=0;')
@@ -265,6 +277,7 @@ class AIVlog(QtWidgets.QWidget):
 
         # upload detections
         cursor = self.data_base.exec_query("SELECT * FROM Detections")
+        self.data_base.commit()
         cache.all_detections = {}
         while cursor.rownumber < cursor.rowcount:
             detection = cursor.fetchone()
@@ -276,6 +289,8 @@ class AIVlog(QtWidgets.QWidget):
 
         # upload labels
         cursor = self.data_base.exec_query("SELECT * FROM Labels")
+        self.data_base.commit()
+
         labels = []
         while cursor.rownumber < cursor.rowcount:
             label = cursor.fetchone()
@@ -285,6 +300,8 @@ class AIVlog(QtWidgets.QWidget):
 
         # upload assignments
         cursor = self.data_base.exec_query("SELECT * FROM Assignments")
+        self.data_base.commit()
+
         cache.assignments = {}
         for frame_num in cache.all_detections.keys():
             cache.assignments[frame_num] = []
