@@ -14,6 +14,9 @@ from DB import DB
 import os
 from Utils import get_index_by_value, generate_yolo_style_object_detection_row
 import glob
+from pascal_voc_writer import Writer
+import pathlib
+import re
 
 class AIVlog(QtWidgets.QWidget):
     def __init__(self, parent, screen_size: tuple):
@@ -351,57 +354,75 @@ class AIVlog(QtWidgets.QWidget):
 
     def generate_dnn_input_data(self):
         input_data_dir = QFileDialog.getExistingDirectory(self, "Open dataset directory", QDir.homePath())
+
         if not input_data_dir == '':
-            labels_dir_path = os.path.join(input_data_dir, 'labels')
-            names_file_name = os.path.join(input_data_dir, 'data.names')
-            self.make_dir(labels_dir_path)
+            input_data_dir = os.path.join(input_data_dir, 'VOC2007')
+            self.make_dir(input_data_dir)
+            ann_dir_path = os.path.join(input_data_dir, 'Annotations')
+            jpeg_img_dir_path = os.path.join(input_data_dir, 'JPEGImages')
+            img_sets_dir_path = os.path.join(os.path.join(input_data_dir, 'ImageSets'), 'Main')
+            pathlib.Path(img_sets_dir_path).mkdir(parents=True, exist_ok=True)
+            self.make_dir(ann_dir_path)
+            self.make_dir(jpeg_img_dir_path)
+            self.make_dir(img_sets_dir_path)
             # folder containing image-detection_file pairs
-            labels = self.generate_dataset(labels_dir_path)
-            labels_num = len(labels)
-            test_data_file_name, train_data_file_name = os.path.join(input_data_dir, 'test.txt'), os.path.join(input_data_dir, 'train.txt')
+            labels = self.generate_dataset(ann_dir_path, jpeg_img_dir_path)
+            test_data_file_name, train_data_file_name = os.path.join(img_sets_dir_path, 'test.txt'), os.path.join(img_sets_dir_path, 'trainval.txt')
             # separate data to train and test
-            self.separate_data(labels_dir_path, test_data_file_name, train_data_file_name)
-            # .names file
-            self.generate_names_file(names_file_name, labels)
-            backup_dir = os.path.join(input_data_dir, 'backup')
-            data_file_name = os.path.join(input_data_dir, 'data.data')
-            self.make_dir(backup_dir)
-            # .data file
-            self.generate_data_file(data_file_name, labels_num, train_data_file_name, test_data_file_name, names_file_name, backup_dir)
-
-            original_cfg_file_name = 'cfg/yolov3.cfg'
-            result_cfg_file_name = os.path.join(input_data_dir, 'yolov3.cfg')
-
-            self.generate_cfg_file(original_cfg_file_name, result_cfg_file_name, labels_num)
-
-    @staticmethod
-    def generate_cfg_file(orig_cfg_file, result_cfg_file, labels_num):
-        filters_row_nums = [603, 689, 776]
-        classes_row_nums = [610, 696, 783]
-
-        with open(orig_cfg_file, 'r') as original_cfg:
-            cfg = original_cfg.readlines()
-        filters_str = f'filters={(labels_num + 5) * 3}\n'
-        classes_str = f'classes={labels_num}\n'
-
-        for filters_row_num in filters_row_nums:
-            cfg[filters_row_num-1] = filters_str
-
-        for classes_row_num in classes_row_nums:
-            cfg[classes_row_num-1] = classes_str
-
-        with open(result_cfg_file, 'w') as result_cfg:
-            result_cfg.writelines(cfg)
+            self.separate_data(jpeg_img_dir_path, test_data_file_name, train_data_file_name)
+            mmdetection_dir = 'mmdetection'
+            self.generate_cfg(labels, mmdetection_dir)
 
 
-    @staticmethod
-    def generate_data_file(data_file, classes_num, train_file, test_file, names_file, backup_dir):
-        with open(data_file, 'w') as data_file:
-            data_file.write(f'classes = {classes_num}\n')
-            data_file.write(f'train = {train_file}\n')
-            data_file.write(f'valid = {test_file}\n')
-            data_file.write(f'names = {names_file}\n')
-            data_file.write(f'backup = {backup_dir}\n')
+    def generate_cfg(self, labels, mmdetection_dir_path):
+        cfg_file = os.path.join(mmdetection_dir_path, 'configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py')
+        anno_path = os.path.join(mmdetection_dir_path, "data/VOC2007/Annotations")
+        voc_file = os.path.join(mmdetection_dir_path, "mmdet/datasets/voc.py")
+        total_epochs = 20
+        self.modify_voc(voc_file, labels)
+        self.modify_cfg(cfg_file, labels, total_epochs)
+
+
+    def modify_cfg(self, config_name, labels, total_epochs):
+        with open(config_name) as f:
+            s = f.read()
+            work_dir = re.findall(r"work_dir = \'(.*?)\'", s)[0]
+            # Update `num_classes` including `background` class.
+            s = re.sub('num_classes=.*?,',
+                       'num_classes={},'.format(len(labels) + 1), s)
+            s = re.sub('ann_file=.*?\],',
+                       "ann_file=data_root + 'VOC2007/ImageSets/Main/trainval.txt',", s, flags=re.S)
+            s = re.sub('total_epochs = \d+',
+                       'total_epochs = {} #'.format(total_epochs), s)
+            if "CocoDataset" in s:
+                s = re.sub("dataset_type = 'CocoDataset'",
+                           "dataset_type = 'VOCDataset'", s)
+                s = re.sub("data_root = 'data/coco/'",
+                           "data_root = 'data/VOCdevkit/'", s)
+                s = re.sub("annotations/instances_train2017.json",
+                           "VOC2007/ImageSets/Main/trainval.txt", s)
+                s = re.sub("annotations/instances_val2017.json",
+                           "VOC2007/ImageSets/Main/test.txt", s)
+                s = re.sub("annotations/instances_val2017.json",
+                           "VOC2007/ImageSets/Main/test.txt", s)
+                s = re.sub("train2017", "VOC2007", s)
+                s = re.sub("val2017", "VOC2007", s)
+            else:
+                s = re.sub('img_prefix=.*?\],',
+                           "img_prefix=data_root + 'VOC2007/',".format(total_epochs), s)
+        with open(config_name, 'w') as f:
+            f.write(s)
+
+
+    def modify_voc(self, voc_file, labels):
+        print(labels)
+        with open(voc_file) as f:
+            s = f.read()
+            s = re.sub('CLASSES = \(.*?\)',
+                       'CLASSES = ({})'.format(", ".join(["\'{}\'".format(name) for name in labels])), s,
+                       flags=re.S)
+        with open(voc_file, 'w') as f:
+            f.write(s)
 
 
 
@@ -419,33 +440,34 @@ class AIVlog(QtWidgets.QWidget):
 
             if counter == index_test:
                 counter = 1
-                file_test.write(current_dir + "/" + title + '.jpg' + "\n")
+                file_test.write(title + "\n")
             else:
-                file_train.write(current_dir + "/" + title + '.jpg' + "\n")
+                file_train.write(title + "\n")
                 counter = counter + 1
 
-    def generate_names_file(self, names_file_name, labels):
-        with open(names_file_name, 'w') as names_file:
-            for label in labels:
-                names_file.write(f'{label}\n')
 
 
-    def generate_dataset(self, labels_dir_path):
+
+    def generate_dataset(self, ann_dir_path, jpeg_img_dir_path):
         labels = []
         frame_width = self.video_player.video_stream.width
         frame_height = self.video_player.video_stream.height
         for frame_num, assignments in self.cache.assignments.items():
             if assignments:
-                frame_name = os.path.join(labels_dir_path, f'frame_{frame_num}')
-                self.video_player.video_stream.save_frame_by_num_as(frame_num, f'{frame_name}.jpg')
-                with open(f'{frame_name}.txt', 'w') as label_txt:
-                    for detection_num, label in assignments:
-                        detection = self.cache.all_detections[frame_num][detection_num]
-                        box = detection[1]
-                        index = get_index_by_value(labels, label)
-                        object_detection_row = generate_yolo_style_object_detection_row(index, box, frame_width,
-                                                                                        frame_height)
-                        label_txt.write(object_detection_row)
+                frame_name = os.path.join(jpeg_img_dir_path, f'frame_{frame_num}')
+                image_name = f'{frame_name}.jpg'
+                self.video_player.video_stream.save_frame_by_num_as(frame_num, image_name)
+
+                voc_writer = Writer(image_name, frame_width, frame_height)
+
+                for detection_num, label in assignments:
+                    detection = self.cache.all_detections[frame_num][detection_num]
+                    box = detection[1]
+                    index = get_index_by_value(labels, label)
+                    voc_writer.addObject(label, *box)
+                xml_file_name = os.path.join(ann_dir_path, f'frame_{frame_num}.xml')
+                voc_writer.save(xml_file_name)
+        labels.sort()
         return labels
 
     def make_dir(self, dir_name):

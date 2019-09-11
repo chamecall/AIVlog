@@ -29,7 +29,7 @@ def get_index_by_value(lst: list, value):
 
 
 def generate_yolo_style_object_detection_row(index, box, frame_width, frame_height):
-    center_x, center_y = [box[i] + box[i + 2] / 2 for i in range(2)]
+    center_x, center_y = box[0], box[1]
     norm_center_x, norm_center_y = center_x / frame_width, center_y / frame_height
     norm_width, norm_height = box[2] / frame_width, box[3] / frame_height
     label_txt_row = ' '.join(

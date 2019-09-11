@@ -13,8 +13,8 @@ def cvDrawBoxes(detections, img, line_thickness=3):
 
     for detection in detections:
         initial_point = detection[1][0], detection[1][1]
-        box_size = detection[1][2], detection[1][3]
-        cv2.rectangle(img, initial_point, box_size, color=(0, 255, 0),
+        end_point = detection[1][2], detection[1][3]
+        cv2.rectangle(img, initial_point, end_point, color=(0, 255, 0),
                       thickness=line_thickness)
         cv2.putText(img, format_detection_to_print_out(detection),
                     (initial_point[0], initial_point[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
