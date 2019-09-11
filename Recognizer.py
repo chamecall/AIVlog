@@ -5,32 +5,20 @@ import os
 import cv2
 import numpy as np
 import time
-#оimport darknet
+import darknet
 from Utils import format_detection_to_print_out
 
-def convertBack(x, y, w, h):
-    xmin = int(round(x - (w / 2)))
-    xmax = int(round(x + (w / 2)))
-    ymin = int(round(y - (h / 2)))
-    ymax = int(round(y + (h / 2)))
-    return xmin, ymin, xmax, ymax
 
+def cvDrawBoxes(detections, img, line_thickness=3):
 
-def cvDrawBoxes(detections, img):
-
-    for i, detection in enumerate(detections, 1):
-        x, y, w, h = detection[1][0], \
-                     detection[1][1], \
-                     detection[1][2], \
-                     detection[1][3]
-        xmin, ymin, xmax, ymax = convertBack(
-            float(x), float(y), float(w), float(h))
-        pt1 = (xmin, ymin)
-        pt2 = (xmax, ymax)
-        cv2.rectangle(img, pt1, pt2, (0, 0, 255), 2)
+    for detection in detections:
+        initial_point = detection[1][0], detection[1][1]
+        box_size = detection[1][2], detection[1][3]
+        cv2.rectangle(img, initial_point, box_size, color=(0, 255, 0),
+                      thickness=line_thickness)
         cv2.putText(img, format_detection_to_print_out(detection),
-                    (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                    [0, 255, 0], 2)
+                    (initial_point[0], initial_point[1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                    [0, 255, 255], 2)
     return img
 
 

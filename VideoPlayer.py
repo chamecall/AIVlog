@@ -109,7 +109,7 @@ class VideoPlayer(QtWidgets.QWidget):
         if not self.cache.all_detections.get(cur_frame_num, None):
             detections = self.detector.get_detections_per_specified_frame(self.video_stream.cur_frame_num)
             #detections = self.recognizer.forward(np_arr_frame)
-            detections = [[detection[0], [int(num) for num in detection[2]]] for detection in detections]
+            detections = [[detection[0], [int(num) for num in detection[1]]] for detection in detections]
             self.detection_signal.emit(self.video_stream.cur_frame_num, detections)
         else:
             detections = self.cache.all_detections[cur_frame_num]

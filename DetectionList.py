@@ -18,7 +18,10 @@ class DetectionList(QtWidgets.QListWidget):
         self.dragged_item = item
 
     def dragEnterEvent(self, event):
-        event.mimeData().setText(self.dragged_item.detection_num)
+        if self.dragged_item:
+            event.mimeData().setText(self.dragged_item.detection_num)
+        else:
+            event.ignore()
 
     def del_dragged_item(self):
         row_num = self.row(self.dragged_item)
